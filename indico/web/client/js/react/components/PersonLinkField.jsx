@@ -175,7 +175,7 @@ const PersonLinkSection = ({
         {persons.length > 0 ? (
           persons.map((p, idx) => (
             <DraggablePerson
-              key={p.userId || p.email || p.firstName + p.lastName}
+              key={p.userId || p.identifier || p.email || p.firstName + p.lastName}
               index={idx}
               drag={!drag}
               dragType={dragType}
