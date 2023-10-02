@@ -5,6 +5,9 @@
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
 
+import './prism';
+import './prism.css';
+
 import _ from 'lodash';
 import contentStyles from 'tinymce/skins/content/default/content.css';
 import contentUIStyles from 'tinymce/skins/ui/oxide/content.css';
