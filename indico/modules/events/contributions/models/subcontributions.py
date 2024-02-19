@@ -5,6 +5,8 @@
 # modify it under the terms of the MIT License; see the
 # LICENSE file for more details.
 
+from datetime import timedelta
+
 from flask import session
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -145,6 +147,18 @@ class SubContribution(SearchableTitleMixin, SearchableDescriptionMixin, Attached
     def timetable_entry(self):
         """Convenience property so all event entities have it."""
         return self.contribution.timetable_entry
+
+    @property
+    def start_dt(self):
+        duration = (db.session.query(db.func.coalesce(db.func.sum(SubContribution.duration), timedelta()))
+                    .where((SubContribution.contribution == self.contribution) &
+                           (SubContribution.position < self.position))
+                    .scalar())
+        return self.timetable_entry.start_dt + duration if self.timetable_entry else None
+
+    @property
+    def end_dt(self):
+        return self.start_dt + self.duration if self.start_dt else None
 
     @property
     def speakers(self):

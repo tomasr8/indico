@@ -467,8 +467,8 @@ ul.day-list {
   padding: 0;
 
   .timetable-item.timetable-subcontrib {
-    border-left: 2px dotted $gray;
-    padding-left: 1em;
+    // border-left: 2px dotted $gray;
+    // padding-left: 1em;
 
     .timetable-title {
       font-weight: normal;
@@ -476,6 +476,17 @@ ul.day-list {
 
     .speaker-list {
       padding-top: 0.5em;
+    }
+  }
+}
+
+.timetable-time.subcontrib-time {
+  &.nested {
+    border-right: 2px dotted $tt-nested-time-color;
+
+    .start-time {
+      background-color: transparent;
+      color: grey !important;
     }
   }
 }
