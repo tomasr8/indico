@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - twheel
+  workflow_dispatch:
 
 env:
   TZ: Europe/Zurich
