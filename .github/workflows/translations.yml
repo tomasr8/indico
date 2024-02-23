@@ -1,8 +1,9 @@
 name: Translation build
 
 on:
-  schedule:
-    - cron: '0 */6 * * *'
+  push:
+    branches:
+      - twheel
 
 env:
   TZ: Europe/Zurich
@@ -36,7 +37,7 @@ jobs:
         run: curl -o- https://raw.githubusercontent.com/transifex/cli/master/install.sh | bash
       - name: Pull and compile translations 🌍
         env:
-          TX_TOKEN: ${{ secrets.TRANSIFEX_TOKEN }}
+          TX_TOKEN: ${{ secrets.TX_TOKEN }}
         run: |
           ./tx pull --all --force
           indico i18n compile indico --no-check
