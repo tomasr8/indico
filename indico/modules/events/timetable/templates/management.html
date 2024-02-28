@@ -10,5 +10,12 @@
     {% if show_draft_warning %}
         {{ render_draft_mode_warning(event) }}
     {% endif %}
-    {{ render_timetable(timetable_data, event_info, management=true, custom_links=custom_links) }}
+    <div id="timetable-container"></div>
+    <script>
+        setupNewTimetable();
+    </script>
+    {% if false %}
+        <h3>Olde timetable:</h3>
+        {{ render_timetable(timetable_data, event_info, management=true, custom_links=custom_links) }}
+    {% endif %}
 {% endblock %}
