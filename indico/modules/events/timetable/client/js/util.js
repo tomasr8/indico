@@ -10,6 +10,7 @@ import moment from 'moment';
 import PropTypes from 'prop-types';
 
 import {Translate} from 'indico/react/i18n';
+import {move} from 'react-big-calendar';
 
 export const entryColorSchema = PropTypes.shape({
   text: PropTypes.string,
@@ -380,6 +381,8 @@ const rearrangeContribs = (contribs, contrib) => {
     (acc, c) => (c.end <= contrib.start && (!acc || c.end > acc.end) ? c : acc),
     null
   );
+  console.log('contrib', contrib);
+  console.log('prevContrib', prevContrib);
   const rearrangedContribs = _.sortBy(contribs.filter(c => c.end > contrib.start), 'start').reduce(
     (acc, c) => {
       const last = acc[acc.length - 1];
@@ -392,6 +395,66 @@ const rearrangeContribs = (contribs, contrib) => {
   );
   return rearrangedContribs;
 };
+
+const rearrangeContribs2 = (contribs, contrib, oldContrib) => {
+  console.log('prev contribs', contribs.map(c => ({id: c.id, start: c.start, end: c.end})));
+  const contribsBefore = contribs.filter(c => c.end <= oldContrib.start);
+  const contribsAfter = contribs.filter(c => c.start >= oldContrib.end);
+  console.log('contribsBefore', contribsBefore.map(c => ({id: c.id, start: c.start, end: c.end})));
+  console.log('contribsAfter', contribsAfter.map(c => ({id: c.id, start: c.start, end: c.end})));
+
+  console.log(
+    'moveUp',
+    moveUp(contribsBefore, contrib).map(c => ({id: c.id, start: c.start, end: c.end}))
+  );
+  console.log(
+    'moveDown',
+    moveDown(contribsAfter, contrib).map(c => ({id: c.id, start: c.start, end: c.end}))
+  );
+
+  const newContribs = [
+    ...moveUp(contribsBefore, contrib),
+    contrib,
+    ...moveDown(contribsAfter, contrib),
+  ];
+  console.log('new contribs', newContribs.map(c => ({id: c.id, start: c.start, end: c.end})));
+  return newContribs;
+};
+
+function moveUp(contribsBefore, newContrib) {
+  const newContribs = [newContrib];
+  for (const contrib of [...contribsBefore].reverse()) {
+    // console.log('contrib', {id: contrib.id, start: contrib.start, end: contrib.end});
+    if (newContribs.at(-1).start < contrib.end) {
+      const diff = newContribs.at(-1).start - contrib.end;
+      newContribs.push({
+        id: contrib.id,
+        start: new Date(contrib.start.getTime() + diff),
+        end: new Date(contrib.end.getTime() + diff),
+      });
+    } else {
+      newContribs.push(contrib);
+    }
+  }
+  return newContribs.slice(1).reverse();
+}
+
+function moveDown(contribsAfter, newContrib) {
+  const newContribs = [newContrib];
+  for (const contrib of contribsAfter) {
+    if (newContribs.at(-1).end > contrib.start) {
+      const diff = newContribs.at(-1).end - contrib.start;
+      newContribs.push({
+        id: contrib.id,
+        start: new Date(contrib.start.getTime() + diff),
+        end: new Date(contrib.end.getTime() + diff),
+      });
+    } else {
+      newContribs.push(contrib);
+    }
+  }
+  return newContribs.slice(1);
+}
 
 /**
  * Moves a contribution
@@ -438,6 +501,8 @@ const moveContrib = (state, args) => {
  * currentChangeIdx
  */
 const resizeChild = (state, args) => {
+  console.log('resizeChild', state, args);
+
   const {blocks, children} = applyChanges(state);
   const {event: child, start, end} = args;
 
@@ -445,19 +510,27 @@ const resizeChild = (state, args) => {
   const parent = blocks.find(b => isChildOf(child, b));
   const parentContribs = children.filter(c => c.id !== child.id && isChildOf(c, parent));
   const hasCollisions = parentContribs.some(c => isConcurrent(c, newContrib));
+
+  console.log('hasCollisions', hasCollisions);
   // if the resizing was done upwards and there's a collision, don't make changes
-  if (hasCollisions && start < child.start) {
-    return {};
-  }
+  // if (hasCollisions && start < child.start) {
+  //   return {};
+  // }
   // otherwise if there are collisions, try to rearange them in order to fit
-  const newContribs = hasCollisions ? rearrangeContribs(parentContribs, newContrib) : [newContrib];
+  // const newContribs = hasCollisions ? rearrangeContribs(parentContribs, newContrib) : [newContrib];
+  const newContribs = hasCollisions
+    ? rearrangeContribs2(parentContribs, newContrib, child)
+    : [newContrib];
+
   // if they don't fit in the block, extend the block
   const lastContrib = newContribs[newContribs.length - 1];
   if (lastContrib.end > parent.end) {
+    console.log('lastContrib.end > parent.end');
     return layoutBlocks(
       addNewChange(state, [...newContribs, {id: parent.id, end: lastContrib.end}])
     );
   } else if (newContribs[0].start < parent.start) {
+    console.log('newContribs[0].start < parent.start');
     return layoutBlocks(
       addNewChange(state, [...newContribs, {id: parent.id, start: newContribs[0].start}])
     );
