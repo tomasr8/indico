@@ -18,6 +18,7 @@ from indico.modules.events.registration.models.registrations import Registration
 from indico.modules.events.registration.models.tags import RegistrationTag
 from indico.modules.events.registration.util import get_flat_section_submission_data, get_form_registration_data
 from indico.util.string import natural_sort_key
+from indico.web.flask.util import url_for
 
 
 class RegistrationFormPrincipalSchema(mm.SQLAlchemyAutoSchema):
@@ -80,9 +81,11 @@ class CheckinRegistrationSchema(mm.SQLAlchemyAutoSchema):
             return fields.DateTime().serialize('timestamp', transaction)
         return None
 
-    def _get_filenames(self, registration):
-        """Extract filenames from file fields."""
-        return {r.field_data.field.id: r.filename
+    def _get_file_data(self, registration):
+        def get_url(data):
+            return url_for('event_registration.manage_registration_file', data.locator.file, _external=True)
+
+        return {r.field_data.field.html_field_name: {'filename': r.filename, 'size': r.size, 'url': get_url(r)}
                 for r in registration.data
                 if r.field_data.field.field_impl.is_file_field and r.storage_file_id is not None}
 
@@ -90,7 +93,7 @@ class CheckinRegistrationSchema(mm.SQLAlchemyAutoSchema):
         regform = registration.registration_form
         form_data = get_flat_section_submission_data(regform, registration=registration, management=True)
         reg_data = get_form_registration_data(regform, registration, management=True)
-        filenames = self._get_filenames(registration)
+        file_data = self._get_file_data(registration)
         sections = sorted(form_data['sections'].values(), key=itemgetter('position'))
         fields = sorted(form_data['items'].values(), key=itemgetter('position'))
         data = {}
@@ -123,10 +126,11 @@ class CheckinRegistrationSchema(mm.SQLAlchemyAutoSchema):
                 field_data['price'] = field['price']
             if 'choices' in field:
                 field_data['choices'] = field['choices']
-            # File field stores the uuid as data which is not helpful.
-            # We want to show the filename instead.
-            if field['id'] in filenames:
-                field_data['data'] = filenames[field['id']]
+            if fd := file_data.get(field['htmlName']):
+                field_data['file_data'] = fd
+                # File field stores the uuid as data which is not helpful.
+                # We want to show the filename instead.
+                field_data['data'] = fd['filename']
             section['fields'].append(field_data)
 
         return list(data.values())
