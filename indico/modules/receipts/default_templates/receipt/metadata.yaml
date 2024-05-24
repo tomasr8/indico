@@ -57,3 +57,18 @@ custom_fields:
       description: |
         Whether to include the affiliation of the registrant between their name
         and address.
+
+  - name: itemized_bill
+    type: checkbox
+    attributes:
+      label: Show itemized bill
+      description: |
+        Whether to show the itemized bill or just the total.
+      value: true
+
+  - name: free_text
+    type: textarea
+    attributes:
+      label: Additional text
+      description: |
+        Additional text to be shown at the bottom of the receipt.

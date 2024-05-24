@@ -80,18 +80,20 @@
     </tr>
   </thead>
   <tbody>
-    {% if registration.base_price %}
-      <tr>
-        <td>Registration fee {% if custom_fields.fee_category %}({{ custom_fields.fee_category }}){% endif %}</td>
-        <td>{{ registration.base_price|format_currency(registration.currency) }}</td>
-      </tr>
+    {% if custom_fields.itemized_bill %}
+      {% if registration.base_price %}
+        <tr>
+          <td>Registration fee {% if custom_fields.fee_category %}({{ custom_fields.fee_category }}){% endif %}</td>
+          <td>{{ registration.base_price|format_currency(registration.currency) }}</td>
+        </tr>
+      {% endif %}
+      {% for field in registration.field_data if field.actual_price %}
+        <tr>
+          <td>{{ field.title }}{% if field.friendly_value %} ({{ field.friendly_value }}){% endif %}</td>
+          <td>{{ field.actual_price|format_currency(registration.currency) }}</td>
+        </tr>
+      {% endfor %}
     {% endif %}
-    {% for field in registration.field_data if field.actual_price %}
-      <tr>
-        <td>{{ field.title }}{% if field.friendly_value %} ({{ field.friendly_value }}){% endif %}</td>
-        <td>{{ field.actual_price|format_currency(registration.currency) }}</td>
-      </tr>
-    {% endfor %}
     <tr class="total">
         <td><strong>Total</strong></td>
         <td>{{ registration.total_price|format_currency(registration.currency) }}</td>
@@ -104,3 +106,9 @@
     {% endif %}
   </tbody>
 </table>
+
+{% if custom_fields.free_text %}
+  <section id="free-text">
+    {{ custom_fields.free_text }}
+  </section>
+{% endif %}

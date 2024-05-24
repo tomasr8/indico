@@ -139,3 +139,8 @@ th:last-of-type,
 td:last-of-type {
   text-align: right;
 }
+
+#free-text {
+  margin-top: 1em;
+  white-space: pre-line;
+}
