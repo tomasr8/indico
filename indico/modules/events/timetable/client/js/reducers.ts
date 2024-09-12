@@ -6,6 +6,7 @@
 // LICENSE file for more details.
 
 import _ from 'lodash';
+import moment from 'moment';
 
 import * as actions from './actions';
 import {
@@ -19,48 +20,10 @@ import {
   changeBreakColor,
   dropUnscheduledContribs,
 } from './operations';
-
-const entryTypeMapping = {
-  Session: 'session',
-  Break: 'break',
-  Contribution: 'contribution',
-};
-
-const preprocessData = (data, eventInfo) => {
-  // TODO remove this preprocessing once the backend returns the data in the correct format
-  const blocks = Object.values(data)
-    .map(e => Object.values(e))
-    .flat();
-  const childEntries = blocks
-    .map(({id, entries}) =>
-      entries ? Object.values(entries).map(v => ({...v, parentId: id})) : []
-    )
-    .flat();
-  console.debug(eventInfo);
-  const unscheduled = eventInfo.contributions || [];
-  return [blocks, childEntries, unscheduled].map(en =>
-    en.map(e => ({
-      ..._.pick(e, [
-        'id',
-        'title',
-        'slotTitle',
-        'code',
-        'sessionCode',
-        'sessionId',
-        'isPoster', // TODO get from session instead?
-        'contributionId',
-        'description',
-        'duration',
-        'parentId',
-      ]),
-      type: entryTypeMapping[e.entryType],
-      start: e.startDate && new Date(Date.parse(`${e.startDate.date} ${e.startDate.time}`)),
-      attachmentCount: e.attachments?.files?.length + e.attachments?.folders?.length, // TODO count files in folders
-      color: e.entryType === 'Break' ? {text: e.textColor, background: e.color} : null,
-      deleted: false,
-    }))
-  );
-};
+import {title} from 'process';
+import {preprocessTimetableData} from './preprocess';
+import {layout, layoutDays} from './layout';
+import {DayEntries, TopLevelEntry} from './types';
 
 const preprocessSessionData = data => {
   return new Map(
@@ -74,34 +37,94 @@ const preprocessSessionData = data => {
   );
 };
 
+interface Change {
+  change: any;
+  entries: DayEntries;
+  unscheduled: any[];
+}
+
+interface Entries {
+  changes: Change[];
+  currentChangeIdx: number;
+  selectedId: number | null;
+  draggedIds: Set<number>;
+  error: string | null;
+}
+
+export interface ReduxState {
+  entries: Entries;
+  sessions: any[];
+  navigation: {numDays: number; offset: number};
+  display: {mode: string; showUnscheduled: boolean};
+  openModal: {type: string | null; entry: any};
+  experimental: {popupsEnabled: boolean};
+}
+
 export default {
   entries: (
-    state = {
-      blocks: [],
-      children: [],
-      unscheduled: [],
+    state: Entries = {
       changes: [],
       currentChangeIdx: 0,
       selectedId: null,
       draggedIds: new Set(),
       error: null,
     },
-    action
+    action: actions.Action
   ) => {
     switch (action.type) {
-      case actions.SET_TIMETABLE_DATA:
-        return preprocessEntries(state, ...preprocessData(action.data, action.eventInfo));
-      case actions.MOVE_ENTRY:
-        return {...state, ...moveEntry(state, action.args)};
-      case actions.RESIZE_ENTRY:
-        return {...state, ...resizeEntry(state, action.args)};
+      case actions.SET_TIMETABLE_DATA: {
+        const {dayEntries, unscheduled} = preprocessTimetableData(action.data, action.eventInfo);
+        return {...state, changes: [{entries: layoutDays(dayEntries), unscheduled}]};
+      }
+      case actions.MOVE_ENTRY: {
+        const date = action.date;
+        const newEntries = Object.fromEntries(
+          Object.entries(state.changes[state.currentChangeIdx].entries).map(([day, dayEntries]) => [
+            day,
+            day === date ? action.entries : dayEntries,
+          ])
+        );
+        return {
+          ...state,
+          currentChangeIdx: state.currentChangeIdx + 1,
+          changes: [
+            ...state.changes.slice(0, state.currentChangeIdx + 1),
+            {
+              entries: newEntries,
+              change: 'move',
+              unscheduled: state.changes[state.currentChangeIdx].unscheduled,
+            },
+          ],
+        };
+      }
+      case actions.RESIZE_ENTRY: {
+        const date = action.date;
+        const newEntries = Object.fromEntries(
+          Object.entries(state.changes[state.currentChangeIdx].entries).map(([day, dayEntries]) => [
+            day,
+            day === date ? action.entries : dayEntries,
+          ])
+        );
+        return {
+          ...state,
+          currentChangeIdx: state.currentChangeIdx + 1,
+          changes: [
+            ...state.changes.slice(0, state.currentChangeIdx + 1),
+            {
+              entries: newEntries,
+              change: 'resize',
+              unscheduled: state.changes[state.currentChangeIdx].unscheduled,
+            },
+          ],
+        };
+      }
       case actions.SELECT_ENTRY:
-        return {...state, selectedId: action.entry?.id};
+        return {...state, selectedId: action.id};
       case actions.DELETE_ENTRY:
         return {
           ...state,
           ...deleteEntry(state, action.entry),
-          selectedId: action.entry?.id === state.selectedId ? null : state.selectedId,
+          selectedId: (action.entry || {}).id === state.selectedId ? null : state.selectedId,
         };
       case actions.DRAG_UNSCHEDULED_CONTRIBS:
         return {...state, draggedIds: action.contribIds};
@@ -111,6 +134,27 @@ export default {
           ...dropUnscheduledContribs(state, action.contribs, action.args),
           draggedIds: new Set(),
         };
+      case actions.SCHEDULE_ENTRY: {
+        const date = action.date;
+        const newEntries = Object.fromEntries(
+          Object.entries(state.changes[state.currentChangeIdx].entries).map(([day, dayEntries]) => [
+            day,
+            day === date ? action.entries : dayEntries,
+          ])
+        );
+        return {
+          ...state,
+          currentChangeIdx: state.currentChangeIdx + 1,
+          changes: [
+            ...state.changes.slice(0, state.currentChangeIdx + 1),
+            {
+              entries: newEntries,
+              change: 'resize',
+              unscheduled: action.unscheduled,
+            },
+          ],
+        };
+      }
       case actions.SCHEDULE_CONTRIBS:
         return {
           ...state,
@@ -122,12 +166,12 @@ export default {
       case actions.UNDO_CHANGE:
         return {
           ...state,
-          currentChangeIdx: state.currentChangeIdx - 1,
+          currentChangeIdx: Math.max(0, state.currentChangeIdx - 1),
         };
       case actions.REDO_CHANGE:
         return {
           ...state,
-          currentChangeIdx: state.currentChangeIdx + 1,
+          currentChangeIdx: Math.min(state.changes.length - 1, state.currentChangeIdx + 1),
         };
       case actions.DISMISS_ERROR:
         return {...state, error: null};

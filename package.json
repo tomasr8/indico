@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "@babel/runtime": "^7.24.0",
+    "@dnd-kit/core": "^6.1.0",
+    "@dnd-kit/modifiers": "^7.0.0",
     "@dr.pogodin/babel-plugin-react-css-modules": "~6.1.1",
     "@monaco-editor/react": "^4.6.0",
     "@tinymce/tinymce-react": "^4.3.0",

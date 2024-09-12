@@ -4,6 +4,8 @@
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
+import {string} from 'prop-types';
+import {TopLevelEntry} from './types';
 
 export const SET_TIMETABLE_DATA = 'Set timetable data';
 export const SET_SESSION_DATA = 'Set session data';
@@ -14,6 +16,7 @@ export const DELETE_ENTRY = 'Delete entry';
 export const DRAG_UNSCHEDULED_CONTRIBS = 'Drag unscheduled contributions';
 export const DROP_UNSCHEDULED_CONTRIBS = 'Drop unscheduled contributions';
 export const SCHEDULE_CONTRIBS = 'Schedule contributions';
+export const SCHEDULE_ENTRY = 'Schedule entry';
 export const CHANGE_COLOR = 'Change color';
 export const UNDO_CHANGE = 'Undo change';
 export const REDO_CHANGE = 'Redo change';
@@ -27,6 +30,32 @@ export const EDIT_ENTRY = 'Edit entry';
 export const CLOSE_MODAL = 'Close modal';
 export const EXPERIMENTAL_TOGGLE_POPUPS = 'Experimental toggle popups';
 
+interface ResizeEntryAction {
+  type: typeof RESIZE_ENTRY;
+  date: string;
+  entries: TopLevelEntry[];
+}
+
+interface MoveEntryAction {
+  type: typeof MOVE_ENTRY;
+  date: string;
+  entries: TopLevelEntry[];
+}
+
+interface SelectEntryAction {
+  type: typeof SELECT_ENTRY;
+  id?: number;
+}
+
+interface ScheduleEntryAction {
+  type: typeof SCHEDULE_ENTRY;
+  date: string;
+  entries: TopLevelEntry[];
+  unscheduled: any[];
+}
+
+export type Action = ResizeEntryAction | MoveEntryAction | SelectEntryAction | ScheduleEntryAction;
+
 export function setTimetableData(data, eventInfo) {
   return {type: SET_TIMETABLE_DATA, data, eventInfo};
 }
@@ -35,16 +64,16 @@ export function setSessionData(data) {
   return {type: SET_SESSION_DATA, data};
 }
 
-export function moveEntry(args) {
-  return {type: MOVE_ENTRY, args};
+export function moveEntry(date: string, entries: TopLevelEntry[]): MoveEntryAction {
+  return {type: MOVE_ENTRY, date, entries};
 }
 
-export function resizeEntry(args) {
-  return {type: RESIZE_ENTRY, args};
+export function resizeEntry(date: string, entries: TopLevelEntry[]): ResizeEntryAction {
+  return {type: RESIZE_ENTRY, date, entries};
 }
 
-export function selectEntry(entry) {
-  return {type: SELECT_ENTRY, entry};
+export function selectEntry(id?: number): SelectEntryAction {
+  return {type: SELECT_ENTRY, id};
 }
 
 export function deleteEntry(entry) {
@@ -61,6 +90,14 @@ export function dropUnscheduledContribs(contribs, args) {
 
 export function scheduleContribs(contribs, gap) {
   return {type: SCHEDULE_CONTRIBS, contribs, gap};
+}
+
+export function scheduleEntry(
+  date: string,
+  entries: TopLevelEntry[],
+  unscheduled: any[]
+): ScheduleEntryAction {
+  return {type: SCHEDULE_ENTRY, date, entries, unscheduled};
 }
 
 export function changeColor(sessionId, color) {

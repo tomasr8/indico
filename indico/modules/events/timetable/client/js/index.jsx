@@ -13,7 +13,7 @@ import createReduxStore from 'indico/utils/redux';
 
 import {setSessionData, setTimetableData} from './actions';
 import reducers from './reducers';
-import {timetableData as tData, eventInfo as eInfo} from './sample-data';
+// import {timetableData as tData, eventInfo as eInfo} from './sample-data';
 import Timetable from './Timetable';
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
