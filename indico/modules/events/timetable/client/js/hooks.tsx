@@ -1,54 +1,18 @@
-import React, {useCallback, useEffect, useRef, useState, createContext, useContext} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
+import {createContext, useContextSelector} from 'use-context-selector';
 
-import {
-  registerDraggable,
-  registerDroppable,
-  unregisterDraggable,
-  unregisterDroppable,
-} from './actions';
-
-interface DnDContextType {
-  // droppables: Record<string, {node: HTMLElement}>;
-  // draggables: Record<string, object>;
-  onDrop: (draggableId: string, droppableId: string) => void;
-}
-// const DnDContext = createContext<DnDContextType>({
-//   // droppables: {},
-//   // draggables: {},
-//   onDrop: () => {},
-// });
-const DnDContext = createContext<DnDContextType>(() => {});
-
-export function DnDProvider({children, onDrop}) {
-  return <DnDContext.Provider value={onDrop}>{children}</DnDContext.Provider>;
+interface Droppable {
+  node: HTMLElement;
 }
 
-export function useDroppable({id}: {id: string}) {
-  const dispatch = useDispatch();
-  // const droppable = useSelector((state: any) => state.droppables[id]);
-  const ref = useRef<HTMLElement | null>(null);
-  // console.log("droppable", droppable);
+interface Draggable {
+  transform?: {x: number; y: number};
+  active?: boolean;
+}
 
-  const setNodeRef = useCallback((node: HTMLElement | null) => {
-    if (node) {
-      ref.current = node;
-    }
-  }, []);
-
-  useEffect(() => {
-    // console.log("registering droppable", id);
-    if (ref.current) {
-      dispatch(registerDroppable(id, ref.current));
-    }
-
-    return () => {
-      // console.log("unregistering droppable", id);
-      dispatch(unregisterDroppable(id));
-    };
-  }, [dispatch, id]);
-
-  return {setNodeRef, data: {}};
+function removeKey(obj, deleteKey) {
+  const {[deleteKey]: _, ...newObj} = obj;
+  return newObj;
 }
 
 type DragState = 'dragging' | 'idle' | 'mousedown';
@@ -57,47 +21,106 @@ interface MousePosition {
   y: number;
 }
 
-function pointerInside(
-  pointer: MousePosition,
-  rect: {top: number; left: number; width: number; height: number}
-) {
-  return (
-    pointer.x > rect.left &&
-    pointer.x < rect.left + rect.width &&
-    pointer.y > rect.top &&
-    pointer.y < rect.top + rect.height
-  );
+interface DnDState {
+  state: DragState;
+  initialMousePosition: MousePosition;
+  scrollPosition: MousePosition;
+  activeDraggable: string;
 }
 
-export function useDraggable({id}: {id: string}) {
-  const dispatch = useDispatch();
-  const dragState = useRef<DragState>('idle');
-  const initialMousePosition = useRef<MousePosition>({x: 0, y: 0});
-  const scrollPosition = useRef<MousePosition>({x: 0, y: 0});
-  //   const draggable = useSelector((state: any) => state.draggables[id]);
-  const droppables = useSelector((state: any) => state.dnd.droppables);
-  // const onDrop = useSelector((state: any) => state.dnd.onDrop);
-  const [transform, setTransform] = useState<MousePosition | null>(null);
-  const onDrop = useContext(DnDContext);
-  // console.log('rerender', id)
-  // const onDrop = dndContext.onDrop;
+interface DnDContextType {
+  droppables: Record<string, Droppable>;
+  draggables: Record<string, Draggable>;
+  onDrop: (draggableId: string, droppableId: string) => void;
+  registerDroppable: (id: string, node: HTMLElement) => void;
+  unregisterDroppable: (id: string) => void;
+  registerDraggable: (id: string) => void;
+  unregisterDraggable: (id: string) => void;
+  onMouseDown: (id: string, position: {x: number; y: number}) => void;
+}
+const DnDContext = createContext<DnDContextType>({
+  droppables: {},
+  draggables: {},
+  onDrop: () => {},
+  registerDroppable: () => {},
+  unregisterDroppable: () => {},
+  registerDraggable: () => {},
+  unregisterDraggable: () => {},
+  onMouseDown: () => {},
+});
 
-  const onMouseDown = useCallback((e: MouseEvent) => {
-    e.stopPropagation();
-    console.log('mouse down');
-    if (dragState.current === 'idle') {
-      dragState.current = 'mousedown';
-      initialMousePosition.current = {x: e.pageX, y: e.pageY};
-      scrollPosition.current = {x: window.scrollX, y: window.scrollY};
+export function DnDProvider({children, onDrop}: {children: React.ReactNode; onDrop: any}) {
+  const [droppables, setDroppables] = useState({});
+  const [draggables, setDraggables] = useState({});
+  const state = useRef<DnDState>({
+    state: 'idle',
+    initialMousePosition: {x: 0, y: 0},
+    scrollPosition: {x: 0, y: 0},
+    activeDraggable: null,
+  });
+
+  const registerDroppable = useCallback((id, node) => {
+    setDroppables(d => ({...d, [id]: {node}}));
+  }, []);
+
+  const unregisterDroppable = useCallback(id => {
+    setDroppables(d => removeKey(d, id));
+  }, []);
+
+  const registerDraggable = useCallback(id => {
+    setDraggables(d => ({...d, [id]: {}}));
+  }, []);
+
+  const unregisterDraggable = useCallback(id => {
+    if (state.current.activeDraggable === id) {
+      state.current = {
+        state: 'idle',
+        initialMousePosition: {x: 0, y: 0},
+        scrollPosition: {x: 0, y: 0},
+        activeDraggable: null,
+      };
+    }
+    setDraggables(d => removeKey(d, id));
+  }, []);
+
+  const onMouseDown = useCallback((id, {x, y}) => {
+    if (state.current.state === 'idle') {
+      state.current = {
+        state: 'mousedown',
+        initialMousePosition: {x, y},
+        scrollPosition: {x: window.scrollX, y: window.scrollY},
+        activeDraggable: id,
+      };
     }
   }, []);
 
-  useEffect(() => {
-    function onMouseUp(e: MouseEvent) {
+  const onMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (state.current.state === 'mousedown' || state.current.state === 'dragging') {
+        if (state.current.state === 'mousedown') {
+          state.current.state = 'dragging';
+        }
+        setDraggables(d => ({
+          ...d,
+          [state.current.activeDraggable]: {
+            active: true,
+            transform: {
+              x: e.pageX - state.current.initialMousePosition.x,
+              y: e.pageY - state.current.initialMousePosition.y,
+            },
+          },
+        }));
+      }
+    },
+    [state]
+  );
+
+  const onMouseUp = useCallback(
+    (e: MouseEvent) => {
       console.log('mouse up');
-      if (dragState.current === 'dragging') {
+      if (state.current.state === 'dragging') {
         // console.log('droppables', droppables);
-        dragState.current = 'idle';
+        state.current.state = 'idle';
         for (const droppableId in droppables) {
           const droppable = droppables[droppableId];
           if (!droppable) {
@@ -115,58 +138,55 @@ export function useDraggable({id}: {id: string}) {
           console.log({x: e.pageX, y: e.pageY}, rect, droppable.node.getBoundingClientRect());
           if (pointerInside({x: e.pageX, y: e.pageY}, rect)) {
             console.log('dropped inside', droppableId, {
-              x: e.pageX - initialMousePosition.current.x,
-              y: e.pageY - initialMousePosition.current.y,
+              x: e.pageX - state.current.initialMousePosition.x,
+              y: e.pageY - state.current.initialMousePosition.y,
             });
+            console.log('state', state.current);
             onDrop(
-              id,
+              state.current.activeDraggable,
               droppableId,
               {
-                x: e.pageX - initialMousePosition.current.x,
-                y: e.pageY - initialMousePosition.current.y,
+                x: e.pageX - state.current.initialMousePosition.x,
+                y: e.pageY - state.current.initialMousePosition.y,
               },
               {pageX: e.pageX, pageY: e.pageY, clientX: e.clientX, clientY: e.clientY},
               rect
             );
           }
         }
-      } else if (dragState.current === 'mousedown') {
-        dragState.current = 'idle';
+      } else if (state.current.state === 'mousedown') {
+        state.current.state = 'idle';
       }
-      setTransform(null);
-    }
+      setDraggables(d => ({
+        ...d,
+        [state.current.activeDraggable]: {
+          active: false,
+          transform: null,
+        },
+      }));
+    },
+    [state, droppables, onDrop]
+  );
 
-    function onMouseMove(e: MouseEvent) {
-      // console.log('mouse move', initialMousePosition.current)
-      // console.log("mouse move", dragState.current);
-      if (dragState.current === 'mousedown' || dragState.current === 'dragging') {
-        if (dragState.current === 'mousedown') {
-          dragState.current = 'dragging';
-          // drag start
-        }
-        setTransform({
-          x: e.pageX - initialMousePosition.current.x,
-          y: e.pageY - initialMousePosition.current.y,
-        });
-      }
+  const onScroll = useCallback(() => {
+    if (state.current.state === 'dragging') {
+      const deltaX = window.scrollX - state.current.scrollPosition.x;
+      const deltaY = window.scrollY - state.current.scrollPosition.y;
+      state.current.scrollPosition = {x: window.scrollX, y: window.scrollY};
+      setDraggables(d => ({
+        ...d,
+        [state.current.activeDraggable]: {
+          active: true,
+          transform: {
+            x: d[state.current.activeDraggable].x + deltaX,
+            y: d[state.current.activeDraggable].y + deltaY,
+          },
+        },
+      }));
     }
+  }, []);
 
-    function onScroll(e) {
-      if (dragState.current === 'dragging') {
-        const deltaX = window.scrollX - scrollPosition.current.x;
-        const deltaY = window.scrollY - scrollPosition.current.y;
-        scrollPosition.current = {x: window.scrollX, y: window.scrollY};
-        setTransform(t => {
-          //   console.log("scroll", t?.y, window.scrollY);
-          return {
-            x: t.x + deltaX,
-            y: t.y + deltaY,
-          };
-        });
-      }
-    }
-
-    dispatch(registerDraggable(id));
+  useEffect(() => {
     document.addEventListener('mouseup', onMouseUp);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('scroll', onScroll);
@@ -175,13 +195,99 @@ export function useDraggable({id}: {id: string}) {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
       document.removeEventListener('scroll', onScroll);
-      dispatch(unregisterDraggable(id));
     };
-  }, [dispatch, id, droppables, onDrop]);
+  }, [onMouseUp, onMouseMove, onScroll]);
+
+  const value = useMemo(
+    () => ({
+      droppables,
+      draggables,
+      onDrop,
+      registerDroppable,
+      unregisterDroppable,
+      registerDraggable,
+      unregisterDraggable,
+      onMouseDown,
+    }),
+    [
+      draggables,
+      droppables,
+      onDrop,
+      registerDroppable,
+      registerDraggable,
+      unregisterDroppable,
+      unregisterDraggable,
+      onMouseDown,
+    ]
+  );
+
+  return <DnDContext.Provider value={value}>{children}</DnDContext.Provider>;
+}
+
+export function useDroppable({id}: {id: string}) {
+  const ref = useRef<HTMLElement | null>(null);
+  const registerDroppable = useContextSelector(DnDContext, ctx => ctx.registerDroppable);
+  const unregisterDroppable = useContextSelector(DnDContext, ctx => ctx.unregisterDroppable);
+
+  const setNodeRef = useCallback((node: HTMLElement | null) => {
+    if (node) {
+      ref.current = node;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (ref.current) {
+      registerDroppable(id, ref.current);
+    }
+
+    return () => {
+      unregisterDroppable(id);
+    };
+  }, [id, registerDroppable, unregisterDroppable]);
+
+  return {setNodeRef};
+}
+
+function pointerInside(
+  pointer: MousePosition,
+  rect: {top: number; left: number; width: number; height: number}
+) {
+  return (
+    pointer.x > rect.left &&
+    pointer.x < rect.left + rect.width &&
+    pointer.y > rect.top &&
+    pointer.y < rect.top + rect.height
+  );
+}
+
+export function useDraggable({id}: {id: string}) {
+  const _onMouseDown = useContextSelector(DnDContext, ctx => ctx.onMouseDown);
+  const draggable = useContextSelector(DnDContext, ctx => ctx.draggables[id]);
+  const registerDraggable = useContextSelector(DnDContext, ctx => ctx.registerDraggable);
+  const unregisterDraggable = useContextSelector(DnDContext, ctx => ctx.unregisterDraggable);
+
+  const onMouseDown = useCallback(
+    (e: MouseEvent) => {
+      console.log('mouse down', id);
+      e.stopPropagation();
+      _onMouseDown(id, {x: e.pageX, y: e.pageY});
+    },
+    [_onMouseDown, id]
+  );
+
+  useEffect(() => {
+    registerDraggable(id);
+
+    return () => {
+      unregisterDraggable(id);
+    };
+  }, [id, registerDraggable, unregisterDraggable]);
+
+  const transform = (draggable || {}).transform;
 
   return {
     transform,
-    isDragging: dragState.current === 'dragging',
+    isDragging: !!transform,
     listeners: {onMouseDown},
   };
 }
