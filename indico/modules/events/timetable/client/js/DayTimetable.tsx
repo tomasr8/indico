@@ -1,6 +1,6 @@
 import {
   DndContext,
-  useDroppable,
+  // useDroppable,
   pointerWithin,
   DragEndEvent,
   useSensor,
@@ -21,6 +21,7 @@ import {TopLevelEntry, BlockEntry, ChildEntry} from './types';
 import {minutesToPixels, pixelsToMinutes} from './utils';
 import UnscheduledContributions from './UnscheduledContributions';
 import {createRestrictToElement} from './dnd';
+import {useDroppable, DnDProvider} from './hooks';
 
 interface DayTimetableProps {
   dt: Moment;
@@ -90,10 +91,10 @@ function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) 
           <DraggableBlockEntry
             key={entry.id}
             selected={selectedId === entry.id}
-            setDuration={fn}
-            setChildDuration={fn}
-            // setDuration={makeSetDuration(entry.id)}
-            // setChildDuration={makeSetChildDuration(entry.id)}
+            // setDuration={fn}
+            // setChildDuration={fn}
+            setDuration={makeSetDuration(entry.id)}
+            setChildDuration={makeSetChildDuration(entry.id)}
             {...entry}
           />
         ) : (
@@ -105,8 +106,8 @@ function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) 
             // title={entry.title}
             // duration={entry.duration}
             // id={entry.id}
-            setDuration={fn}
-            // setDuration={makeSetDuration(entry.id)}
+            // setDuration={fn}
+            setDuration={makeSetDuration(entry.id)}
             {...entry}
           />
         )
@@ -125,6 +126,8 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
   const selectedId = useSelector(selectors.getSelectedId);
   const unscheduled = useSelector(selectors.getUnscheduled);
   const calendarRef = useRef<HTMLDivElement | null>(null);
+  // const dnd = useSelector(state => state.dnd);
+  // console.log('DND', dnd);
 
   function modifier(...args) {
     const result = snapToGridModifier(...args);
@@ -134,104 +137,12 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
 
   entries = computeYoffset(entries, minHour);
 
-  // const makeSetDuration = (id: number) => (duration: number) => {
-  //   const newEntries = layout(
-  //     entries.map(entry => {
-  //       if (entry.id === id) {
-  //         return {
-  //           ...entry,
-  //           duration,
-  //         };
-  //       }
-  //       return entry;
-  //     })
-  //   );
-  //   dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
-  // };
-
-  // const makeSetChildDuration = (parentId: number) => (childId: number, duration: number) => {
-  //   const newEntries = layout(
-  //     entries.map(entry => {
-  //       if (entry.type === 'block' && entry.id === parentId) {
-  //         return {
-  //           ...entry,
-  //           children: entry.children.map(child => {
-  //             if (child.id === childId) {
-  //               return {
-  //                 ...child,
-  //                 duration: moment(entry.startDt)
-  //                   .add(duration, 'minutes')
-  //                   .isBefore(moment(child.startDt).add(entry.duration, 'minutes'))
-  //                   ? duration
-  //                   : entry.duration,
-  //               };
-  //             }
-  //             return child;
-  //           }),
-  //         };
-  //       }
-  //       return entry;
-  //     })
-  //   );
-  //   dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
-  // };
-
-  // Needed to get onClick events workings on draggable elements
-  // https://github.com/clauderic/dnd-kit/issues/800
-  const sensor = useSensor(PointerSensor, {
-    activationConstraint: {
-      distance: 5,
-    },
-  });
-  const sensors = useSensors(sensor);
-
-  useEffect(() => {
-    function onMouseMove(event: MouseEvent) {
-      mouseEventRef.current = event;
-    }
-
-    // function onClick(event: MouseEvent) {
-    //   dispatch(actions.selectEntry(null));
-    // }
-
-    document.addEventListener('mousemove', onMouseMove);
-    // document.addEventListener('click', onClick);
-    return () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      // document.removeEventListener('click', onClick);
-    };
-  }, []);
-
-  const restrictToCalendar = createRestrictToElement(calendarRef);
-
-  return (
-    <DndContext
-      // autoScroll={{interval: minutesToPixels(5)}}
-      onDragEnd={handleDragEnd}
-      modifiers={[restrictToCalendar, modifier]}
-      collisionDetection={pointerWithin}
-      sensors={sensors}
-    >
-      <>
-        <UnscheduledContributions />
-        <div styleName="wrapper">
-          <TimeGutter minHour={minHour} maxHour={maxHour} />
-          <DnDCalendar>
-            <div ref={calendarRef}>
-              <Lines minHour={minHour} maxHour={maxHour} />
-              <MemoizedTopLevelEntries dt={dt} entries={entries} />
-            </div>
-          </DnDCalendar>
-        </div>
-      </>
-    </DndContext>
-  );
-
-  function handleDragEnd(event: DragEndEvent) {
-    if (event && event.over && event.over.id === 'calendar') {
-      handleDropOnCalendar(event);
+  function handleDragEnd(who, where, delta, mouse, rect) {
+    console.log('handleDragEnd', who, where, delta, mouse, rect);
+    if (where === 'calendar') {
+      handleDropOnCalendar(who, delta, mouse, rect);
     } else {
-      handleDropOnBlock(event);
+      // handleDropOnBlock(event);
     }
   }
 
@@ -288,27 +199,28 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
     );
   }
 
-  function handleDropOnCalendar(event: DragEndEvent) {
-    if (!event.over) {
-      return; // not over any droppable area, the item will return back to its original position
-    }
+  function handleDropOnCalendar(who, delta, mouse, rect) {
+    // if (!event.over) {
+    //   return; // not over any droppable area, the item will return back to its original position
+    // }
 
-    if (mouseEventRef.current === null) {
-      return;
-    }
+    // if (mouseEventRef.current === null) {
+    //   return;
+    // }
 
-    const {id} = event.active;
+    const id = who;
 
     // console.log('handleDropOnCalendar', id, typeof id, id.startsWith('unscheduled-'));
 
-    if (typeof id === 'string' && id.startsWith('unscheduled-')) {
-      return handleUnscheduledDrop(event);
-    }
+    // if (typeof id === 'string' && id.startsWith('unscheduled-')) {
+    //   return handleUnscheduledDrop(event);
+    // }
 
-    const {x, y} = event.delta;
+    const {x, y} = delta;
     const deltaMinutes = Math.ceil(pixelsToMinutes(y) / 5) * 5;
-    const mousePosition =
-      (mouseEventRef.current.pageX - event.over.rect.left) / event.over.rect.width;
+    // const mousePosition =
+    //   (mouseEventRef.current.pageX - event.over.rect.left) / event.over.rect.width;
+    const mousePosition = (mouse.pageX - rect.left) / rect.width;
 
     let entry = entries.find(entry => entry.id === id);
     let fromBlock: BlockEntry | undefined;
@@ -481,6 +393,104 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
       );
     }
   }
+
+  // useEffect(() => {
+
+  //   dispatch(actions.registerOnDrop(handleDragEnd));
+  // }, [dispatch, dt, entries, unscheduled]);
+
+  // const makeSetDuration = (id: number) => (duration: number) => {
+  //   const newEntries = layout(
+  //     entries.map(entry => {
+  //       if (entry.id === id) {
+  //         return {
+  //           ...entry,
+  //           duration,
+  //         };
+  //       }
+  //       return entry;
+  //     })
+  //   );
+  //   dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
+  // };
+
+  // const makeSetChildDuration = (parentId: number) => (childId: number, duration: number) => {
+  //   const newEntries = layout(
+  //     entries.map(entry => {
+  //       if (entry.type === 'block' && entry.id === parentId) {
+  //         return {
+  //           ...entry,
+  //           children: entry.children.map(child => {
+  //             if (child.id === childId) {
+  //               return {
+  //                 ...child,
+  //                 duration: moment(entry.startDt)
+  //                   .add(duration, 'minutes')
+  //                   .isBefore(moment(child.startDt).add(entry.duration, 'minutes'))
+  //                   ? duration
+  //                   : entry.duration,
+  //               };
+  //             }
+  //             return child;
+  //           }),
+  //         };
+  //       }
+  //       return entry;
+  //     })
+  //   );
+  //   dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
+  // };
+
+  // Needed to get onClick events workings on draggable elements
+  // https://github.com/clauderic/dnd-kit/issues/800
+  const sensor = useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 5,
+    },
+  });
+  const sensors = useSensors(sensor);
+
+  useEffect(() => {
+    function onMouseMove(event: MouseEvent) {
+      mouseEventRef.current = event;
+    }
+
+    // function onClick(event: MouseEvent) {
+    //   dispatch(actions.selectEntry(null));
+    // }
+
+    document.addEventListener('mousemove', onMouseMove);
+    // document.addEventListener('click', onClick);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      // document.removeEventListener('click', onClick);
+    };
+  }, []);
+
+  const restrictToCalendar = createRestrictToElement(calendarRef);
+
+  return (
+    // <DndContext
+    //   // autoScroll={{interval: minutesToPixels(5)}}
+    //   onDragEnd={handleDragEnd}
+    //   modifiers={[restrictToCalendar, modifier]}
+    //   collisionDetection={pointerWithin}
+    //   sensors={sensors}
+    // >
+    <DnDProvider onDrop={handleDragEnd}>
+      <UnscheduledContributions />
+      <div styleName="wrapper">
+        <TimeGutter minHour={minHour} maxHour={maxHour} />
+        <DnDCalendar>
+          <div ref={calendarRef}>
+            <Lines minHour={minHour} maxHour={maxHour} />
+            <MemoizedTopLevelEntries dt={dt} entries={entries} />
+          </div>
+        </DnDCalendar>
+      </div>
+    </DnDProvider>
+    // </DndContext>
+  );
 }
 
 interface TimeGutterProps {

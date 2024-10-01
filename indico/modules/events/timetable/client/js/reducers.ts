@@ -20,6 +20,13 @@ import {
   changeBreakColor,
   dropUnscheduledContribs,
 } from './operations';
+import {
+  REGISTER_DROPPABLE,
+  UNREGISTER_DROPPABLE,
+  SET_DROPPABLE_DATA,
+  REGISTER_DRAGGABLE,
+  UNREGISTER_DRAGGABLE,
+} from './actions';
 import {title} from 'process';
 import {preprocessTimetableData} from './preprocess';
 import {layout, layoutDays} from './layout';
@@ -229,4 +236,56 @@ export default {
         return state;
     }
   },
+  dnd,
 };
+
+interface Droppable {
+  node: HTMLElement;
+}
+
+interface State {
+  droppables: Record<string, Droppable>;
+  draggables: Record<string, object>;
+  onDrop: (draggableId: string, droppableId: string) => void;
+}
+
+function dnd(
+  state: State = {
+    droppables: {},
+    draggables: {},
+    onDrop: (a, b) => {
+      console.log(`Dropped ${a} on ${b}`);
+    },
+  },
+  action: any
+) {
+  switch (action.type) {
+    case REGISTER_DROPPABLE:
+      return {
+        ...state,
+        droppables: {...state.droppables, [action.id]: {node: action.node}},
+      };
+    case UNREGISTER_DROPPABLE:
+      return {
+        ...state,
+        droppables: {...state.droppables, [action.id]: undefined},
+      };
+    case REGISTER_DRAGGABLE:
+      return {
+        ...state,
+        draggables: {...state.draggables, [action.id]: {}},
+      };
+    case UNREGISTER_DRAGGABLE:
+      return {
+        ...state,
+        draggables: {...state.draggables, [action.id]: undefined},
+      };
+    case actions.REGISTER_ON_DROP:
+      return {
+        ...state,
+        onDrop: action.onDrop,
+      };
+    default:
+      return state;
+  }
+}

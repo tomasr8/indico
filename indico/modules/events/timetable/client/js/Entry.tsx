@@ -1,5 +1,5 @@
 // import momentjs
-import {useDraggable, useDroppable} from '@dnd-kit/core';
+// import {useDraggable, useDroppable} from '@dnd-kit/core';
 import moment from 'moment';
 import React, {useEffect, useRef, useState, MouseEvent as SyntheticMouseEvent} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
@@ -9,6 +9,7 @@ import {ChildEntry, ContribEntry, BreakEntry, BlockEntry} from './types';
 import {minutesToPixels, pixelsToMinutes} from './utils';
 import * as actions from './actions';
 import * as selectors from './selectors';
+import {useDraggable, useDroppable} from './hooks';
 
 import './DayTimetable.module.scss';
 import {TimetablePopup} from './entry_popups';
@@ -203,9 +204,9 @@ function _DraggableEntry({
     >
       <div
         styleName="drag-handle"
-        ref={setNodeRef}
+        // ref={setNodeRef}
         {...listeners}
-        {...attributes}
+        // {...attributes}
         onClick={e => {
           e.stopPropagation();
           dispatch(actions.selectEntry(id));
@@ -257,9 +258,9 @@ export function DraggableEntry({id, ...rest}) {
     <DraggableEntryMemo
       id={id}
       {...rest}
-      attributes={attributes}
+      // attributes={attributes}
       listeners={listeners}
-      setNodeRef={setNodeRef}
+      // setNodeRef={setNodeRef}
       transform={transform}
       isDragging={isDragging}
     />
@@ -389,7 +390,9 @@ export function _DraggableBlockEntry({
   // shift children startDt by deltaMinutes
   const children = _children.map(child => ({
     ...child,
-    startDt: moment(child.startDt).add(deltaMinutes, 'minutes').format(),
+    startDt: moment(child.startDt)
+      .add(deltaMinutes, 'minutes')
+      .format(),
   }));
 
   const makeSetDuration = (id: number) => (d: number) => setChildDuration(id, d);
@@ -405,14 +408,14 @@ export function _DraggableBlockEntry({
     <button type="button" styleName="entry block" style={style}>
       <div
         styleName="drag-handle"
-        ref={setNodeRef}
+        // ref={setNodeRef}
         style={{
           cursor: isResizing ? undefined : isDragging ? 'grabbing' : 'grab',
           display: 'flex',
           padding: 0,
         }}
         {...listeners}
-        {...attributes}
+        // {...attributes}
         onClick={e => {
           e.stopPropagation();
           dispatch(actions.selectEntry(id));
@@ -436,7 +439,9 @@ export function _DraggableBlockEntry({
               // setDuration={makeSetDuration(child.id)}
               // parentEndDt={moment(startDt).add(deltaMinutes + duration, 'minutes')}
               setDuration={null}
-              parentEndDt={moment(startDt).add(deltaMinutes + duration, 'minutes').format()}
+              parentEndDt={moment(startDt)
+                .add(deltaMinutes + duration, 'minutes')
+                .format()}
               {...child}
             />
           ))}
@@ -467,9 +472,9 @@ export function DraggableBlockEntry({id, ...rest}) {
     <DraggableBlockEntryMemo
       id={id}
       {...rest}
-      attributes={attributes}
+      // attributes={attributes}
       listeners={listeners}
-      setNodeRef={setNodeRef}
+      // setNodeRef={setNodeRef}
       transform={transform}
       isDragging={isDragging}
     />
