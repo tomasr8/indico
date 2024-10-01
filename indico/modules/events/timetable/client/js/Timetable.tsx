@@ -46,10 +46,20 @@ export default function Timetable() {
   }
   const popupsEnabled = useSelector(selectors.getPopupsEnabled);
 
-  console.log('selectedEntry', selectedEntry);
-
-  const minHour = 0;
-  const maxHour = 17;
+  const minHour = Math.max(
+    0,
+    Math.min(...currentDateEntries.map(e => moment(e.startDt).hour())) - 1
+  );
+  const maxHour = Math.min(
+    24,
+    Math.max(
+      ...currentDateEntries.map(e =>
+        moment(e.startDt)
+          .add(e.duration, 'minutes')
+          .hour()
+      )
+    ) + 1
+  );
 
   useEffect(() => {
     function onKeydown(e: KeyboardEvent) {
