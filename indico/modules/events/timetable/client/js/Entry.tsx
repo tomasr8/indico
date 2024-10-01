@@ -46,7 +46,7 @@ function ResizeHandle({
 }) {
   function resizeHandler(e: SyntheticMouseEvent) {
     e.stopPropagation();
-    console.log('stopped propagation');
+    // console.log('stopped propagation');
     resizeStartRef.current = e.clientY;
     document.body.style.cursor = 'ns-resize';
     setIsResizing(true);
@@ -97,8 +97,9 @@ function ResizeHandle({
       styleName={`resize-handle ${forBlock ? 'block' : ''}`}
       onMouseDown={resizeHandler}
       onPointerDown={e => {
-        e.stopPropagation(); // prevent drag start on the parent blokck
+        e.stopPropagation(); // prevent drag start on the parent block
       }}
+      onClick={e => e.stopPropagation()} // prevent parent block becoming selected when resizing a child
     />
   );
 }
@@ -107,7 +108,7 @@ function snap(x: number, gridSize: number = 5) {
   return Math.ceil(x / gridSize) * gridSize;
 }
 
-export function DraggableEntry({
+function _DraggableEntry({
   type,
   id,
   startDt,
@@ -116,12 +117,18 @@ export function DraggableEntry({
   selected,
   x,
   y,
+  attributes,
+  listeners,
+  setNodeRef,
+  transform,
+  isDragging,
   width,
   column,
   maxColumn,
   setDuration: _setDuration,
   parentEndDt,
 }: DraggableEntryProps) {
+  // console.log('rereendering entry', id, type, _duration, x, y, title);
   const dispatch = useDispatch();
   const resizeStartRef = useRef<number | null>(null);
   const [isResizing, setIsResizing] = useState(false);
@@ -129,9 +136,10 @@ export function DraggableEntry({
   const [open, setOpen] = useState(!!selected);
   const [duration, setDuration] = useState(_duration);
   const popupRef = useRef<HTMLButtonElement | null>(null);
-  const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
-    id,
-  });
+  // const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
+  //   id,
+  // });
+  // console.log('transform', transform);
   let style: Record<string, string | number | undefined> = transform
     ? {
         transform: `translate3d(${transform.x}px, ${snap(transform.y, 10)}px, 0)`,
@@ -180,6 +188,12 @@ export function DraggableEntry({
 
   // console.log(listeners);
 
+  // return (
+  //   <button type="button" styleName={`entry`} style={style}>
+  //     test
+  //   </button>
+  // );
+
   const trigger = (
     <button
       ref={popupRef}
@@ -197,11 +211,12 @@ export function DraggableEntry({
           dispatch(actions.selectEntry(id));
         }}
       >
+        {/* {title} */}
         <ContributionTitle title={title} start={newStart} end={newEnd} duration={duration} />
       </div>
       <ResizeHandle
         duration={duration}
-        maxDuration={parentEndDt ? parentEndDt.diff(startDt, 'minutes') : undefined}
+        maxDuration={parentEndDt ? moment(parentEndDt).diff(startDt, 'minutes') : undefined}
         resizeStartRef={resizeStartRef}
         setLocalDuration={setDuration}
         setGlobalDuration={_setDuration}
@@ -230,6 +245,27 @@ export function DraggableEntry({
   );
 }
 
+const DraggableEntryMemo = React.memo(_DraggableEntry);
+// export const DraggableEntry = _DraggableEntry;
+
+export function DraggableEntry({id, ...rest}) {
+  const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
+    id,
+  });
+
+  return (
+    <DraggableEntryMemo
+      id={id}
+      {...rest}
+      attributes={attributes}
+      listeners={listeners}
+      setNodeRef={setNodeRef}
+      transform={transform}
+      isDragging={isDragging}
+    />
+  );
+}
+
 function ContributionTitle({
   title,
   start,
@@ -243,19 +279,34 @@ function ContributionTitle({
 }) {
   if (duration <= 10) {
     return (
-      <div style={{whiteSpace: 'nowrap', lineHeight: '1em', paddingLeft: 8}}>
+      <div
+        style={{
+          whiteSpace: 'nowrap',
+          lineHeight: '1em',
+          paddingLeft: 8,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
         {title}, {start} - {end}
       </div>
     );
   } else if (duration <= 20) {
     return (
-      <div style={{whiteSpace: 'nowrap', padding: '4px 8px'}}>
+      <div
+        style={{
+          whiteSpace: 'nowrap',
+          padding: '4px 8px',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
         {title}, {start} - {end}
       </div>
     );
   }
   return (
-    <div style={{padding: '4px 8px'}}>
+    <div style={{padding: '4px 8px', overflow: 'hidden', textOverflow: 'ellipsis'}}>
       <div>{title}</div>
       <div>
         {start} - {end}
@@ -264,7 +315,7 @@ function ContributionTitle({
   );
 }
 
-export function DraggableBlockEntry({
+export function _DraggableBlockEntry({
   id,
   startDt,
   duration: _duration,
@@ -278,19 +329,25 @@ export function DraggableBlockEntry({
   children: _children,
   setDuration: _setDuration,
   setChildDuration,
+  attributes,
+  listeners,
+  setNodeRef,
+  transform,
+  isDragging,
 }: DraggableBlockEntryProps) {
   const dispatch = useDispatch();
+  // console.log('rereendering block', id);
   const selectedId = useSelector(selectors.getSelectedId);
   const mouseEventRef = useRef<MouseEvent | null>(null);
   const resizeStartRef = useRef(null);
   const [isResizing, setIsResizing] = useState(false);
   const [duration, setDuration] = useState(_duration);
-  const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
-    id,
-  });
+  // const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
+  //   id,
+  // });
   const {setNodeRef: setDroppableNodeRef} = useDroppable({
     id,
-    disabled: true,
+    // disabled: true,
   });
   let style: Record<string, string | number | undefined> = transform
     ? {
@@ -332,7 +389,7 @@ export function DraggableBlockEntry({
   // shift children startDt by deltaMinutes
   const children = _children.map(child => ({
     ...child,
-    startDt: moment(child.startDt).add(deltaMinutes, 'minutes'),
+    startDt: moment(child.startDt).add(deltaMinutes, 'minutes').format(),
   }));
 
   const makeSetDuration = (id: number) => (d: number) => setChildDuration(id, d);
@@ -361,7 +418,7 @@ export function DraggableBlockEntry({
           dispatch(actions.selectEntry(id));
         }}
       >
-        <div style={{padding: '4px 8px'}}>
+        <div style={{padding: '4px 8px', maxWidth: '50%'}}>
           <SessionBlockTitle title={title} start={newStart} end={newEnd} />
         </div>
         <div
@@ -376,8 +433,10 @@ export function DraggableBlockEntry({
             <DraggableEntry
               key={child.id}
               selected={child.id === selectedId}
-              setDuration={makeSetDuration(child.id)}
-              parentEndDt={moment(startDt).add(deltaMinutes + duration, 'minutes')}
+              // setDuration={makeSetDuration(child.id)}
+              // parentEndDt={moment(startDt).add(deltaMinutes + duration, 'minutes')}
+              setDuration={null}
+              parentEndDt={moment(startDt).add(deltaMinutes + duration, 'minutes').format()}
               {...child}
             />
           ))}
@@ -394,6 +453,26 @@ export function DraggableBlockEntry({
         setIsResizing={setIsResizing}
       />
     </button>
+  );
+}
+
+const DraggableBlockEntryMemo = React.memo(_DraggableBlockEntry);
+
+export function DraggableBlockEntry({id, ...rest}) {
+  const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
+    id,
+  });
+
+  return (
+    <DraggableBlockEntryMemo
+      id={id}
+      {...rest}
+      attributes={attributes}
+      listeners={listeners}
+      setNodeRef={setNodeRef}
+      transform={transform}
+      isDragging={isDragging}
+    />
   );
 }
 

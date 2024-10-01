@@ -179,6 +179,13 @@ export function computeYoffset(entries: TopLevelEntry[], startHour: number): Top
         .add(startHour, 'hours'),
       'minutes'
     );
-    return {...entry, y: minutesToPixels(offsetMinutes)};
+    if (entry.type !== 'block') {
+      return {...entry, y: minutesToPixels(offsetMinutes)};
+    }
+    const children = entry.children.map(child => ({
+      ...child,
+      y: minutesToPixels(moment(child.startDt).diff(entry.startDt, 'minutes')),
+    }));
+    return {...entry, y: minutesToPixels(offsetMinutes), children};
   });
 }

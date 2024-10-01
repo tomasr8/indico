@@ -22,6 +22,10 @@ export function preprocessTimetableData(
       const type = entryTypeMapping[_id[0]];
       const entry = data[day][_id];
 
+      // if(id !== 313) {
+      //   continue;
+      // }
+
       dayEntries[day].push({
         type,
         id,

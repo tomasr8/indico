@@ -2,8 +2,6 @@
   position: relative;
   display: flex;
   width: 100%;
-  // border-left: 1px solid #d4d4d5;
-  // border-bottom: 1px solid #d4d4d5;
 }
 
 .time-gutter {
@@ -12,9 +10,6 @@
   border-right: 1px solid #d4d4d5;
 
   .time-slot {
-    // position: relative;
-    // padding: 5px;
-    // border-bottom: 1px solid #d4d4d5;
     div {
       position: relative;
       top: -8px;
@@ -67,7 +62,6 @@
 
 .drag-handle {
   text-align: left;
-  // padding: 4px 8px;
   font-size: 15px;
   width: 100%;
 }

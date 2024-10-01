@@ -4,7 +4,6 @@
 // Indico is free software; you can redistribute it and/or
 // modify it under the terms of the MIT License; see the
 // LICENSE file for more details.
-import {string} from 'prop-types';
 import {TopLevelEntry} from './types';
 
 export const SET_TIMETABLE_DATA = 'Set timetable data';

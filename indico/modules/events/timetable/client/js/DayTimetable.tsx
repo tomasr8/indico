@@ -9,7 +9,7 @@ import {
 } from '@dnd-kit/core';
 import {createSnapModifier, restrictToParentElement} from '@dnd-kit/modifiers';
 import moment, {Moment} from 'moment';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
 import './DayTimetable.module.scss';
@@ -29,6 +29,94 @@ interface DayTimetableProps {
   entries: TopLevelEntry[];
 }
 
+function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) {
+  const dispatch = useDispatch();
+  const selectedId = useSelector(selectors.getSelectedId);
+
+  const makeSetDuration = useCallback(
+    (id: number) => (duration: number) => {
+      const newEntries = layout(
+        entries.map(entry => {
+          if (entry.id === id) {
+            return {
+              ...entry,
+              duration,
+            };
+          }
+          return entry;
+        })
+      );
+      dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
+    },
+    [dispatch, entries, dt]
+  );
+
+  const makeSetChildDuration = useCallback(
+    (parentId: number) => (childId: number, duration: number) => {
+      const newEntries = layout(
+        entries.map(entry => {
+          if (entry.type === 'block' && entry.id === parentId) {
+            return {
+              ...entry,
+              children: entry.children.map(child => {
+                if (child.id === childId) {
+                  return {
+                    ...child,
+                    duration: moment(entry.startDt)
+                      .add(duration, 'minutes')
+                      .isBefore(moment(child.startDt).add(entry.duration, 'minutes'))
+                      ? duration
+                      : entry.duration,
+                  };
+                }
+                return child;
+              }),
+            };
+          }
+          return entry;
+        })
+      );
+      dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
+    },
+    [dispatch, entries, dt]
+  );
+
+  const fn = useCallback(() => {}, []);
+
+  return (
+    <>
+      {entries.map(entry =>
+        entry.type === 'block' ? (
+          <DraggableBlockEntry
+            key={entry.id}
+            selected={selectedId === entry.id}
+            setDuration={fn}
+            setChildDuration={fn}
+            // setDuration={makeSetDuration(entry.id)}
+            // setChildDuration={makeSetChildDuration(entry.id)}
+            {...entry}
+          />
+        ) : (
+          <DraggableEntry
+            key={entry.id}
+            // x={entry.x}
+            // y={entry.y}
+            // type={entry.type}
+            // title={entry.title}
+            // duration={entry.duration}
+            // id={entry.id}
+            setDuration={fn}
+            // setDuration={makeSetDuration(entry.id)}
+            {...entry}
+          />
+        )
+      )}
+    </>
+  );
+}
+
+const MemoizedTopLevelEntries = React.memo(TopLevelEntries);
+
 export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps) {
   const dispatch = useDispatch();
   const mouseEventRef = useRef<MouseEvent | null>(null);
@@ -45,49 +133,48 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
   }
 
   entries = computeYoffset(entries, minHour);
-  console.log('DayTimetable', entries);
 
-  const makeSetDuration = (id: number) => (duration: number) => {
-    const newEntries = layout(
-      entries.map(entry => {
-        if (entry.id === id) {
-          return {
-            ...entry,
-            duration,
-          };
-        }
-        return entry;
-      })
-    );
-    dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
-  };
+  // const makeSetDuration = (id: number) => (duration: number) => {
+  //   const newEntries = layout(
+  //     entries.map(entry => {
+  //       if (entry.id === id) {
+  //         return {
+  //           ...entry,
+  //           duration,
+  //         };
+  //       }
+  //       return entry;
+  //     })
+  //   );
+  //   dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
+  // };
 
-  const makeSetChildDuration = (parentId: number) => (childId: number, duration: number) => {
-    const newEntries = layout(
-      entries.map(entry => {
-        if (entry.type === 'block' && entry.id === parentId) {
-          return {
-            ...entry,
-            children: entry.children.map(child => {
-              if (child.id === childId) {
-                return {
-                  ...child,
-                  duration: moment(entry.startDt)
-                    .add(duration, 'minutes')
-                    .isBefore(moment(child.startDt).add(entry.duration, 'minutes'))
-                    ? duration
-                    : entry.duration,
-                };
-              }
-              return child;
-            }),
-          };
-        }
-        return entry;
-      })
-    );
-    dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
-  };
+  // const makeSetChildDuration = (parentId: number) => (childId: number, duration: number) => {
+  //   const newEntries = layout(
+  //     entries.map(entry => {
+  //       if (entry.type === 'block' && entry.id === parentId) {
+  //         return {
+  //           ...entry,
+  //           children: entry.children.map(child => {
+  //             if (child.id === childId) {
+  //               return {
+  //                 ...child,
+  //                 duration: moment(entry.startDt)
+  //                   .add(duration, 'minutes')
+  //                   .isBefore(moment(child.startDt).add(entry.duration, 'minutes'))
+  //                   ? duration
+  //                   : entry.duration,
+  //               };
+  //             }
+  //             return child;
+  //           }),
+  //         };
+  //       }
+  //       return entry;
+  //     })
+  //   );
+  //   dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
+  // };
 
   // Needed to get onClick events workings on draggable elements
   // https://github.com/clauderic/dnd-kit/issues/800
@@ -132,24 +219,7 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
           <DnDCalendar>
             <div ref={calendarRef}>
               <Lines minHour={minHour} maxHour={maxHour} />
-              {entries.map(entry =>
-                entry.type === 'block' ? (
-                  <DraggableBlockEntry
-                    key={entry.id}
-                    selected={selectedId === entry.id}
-                    setDuration={makeSetDuration(entry.id)}
-                    setChildDuration={makeSetChildDuration(entry.id)}
-                    {...entry}
-                  />
-                ) : (
-                  <DraggableEntry
-                    key={entry.id}
-                    selected={selectedId === entry.id}
-                    setDuration={makeSetDuration(entry.id)}
-                    {...entry}
-                  />
-                )
-              )}
+              <MemoizedTopLevelEntries dt={dt} entries={entries} />
             </div>
           </DnDCalendar>
         </div>
@@ -314,11 +384,15 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
       return;
     }
 
+    console.log('handleDropOnBlock', event);
+
     const overId = event.over.id;
     const toBlock: BlockEntry = entries.find(entry => entry.id === overId)! as BlockEntry;
     const fromBlock = entries
       .filter(e => e.type === 'block')
       .find(entry => !!entry.children.find(c => c.id === event.active.id));
+
+    console.log(overId, toBlock, fromBlock);
 
     const {id} = event.active;
     const {x, y} = event.delta;
