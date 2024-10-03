@@ -9,7 +9,7 @@ import {ChildEntry, ContribEntry, BreakEntry, BlockEntry} from './types';
 import {minutesToPixels, pixelsToMinutes} from './utils';
 import * as actions from './actions';
 import * as selectors from './selectors';
-import {useDraggable, useDroppable} from './dnd/dnd';
+import {useDraggable, useDroppable} from './dnd';
 
 import './DayTimetable.module.scss';
 import {TimetablePopup} from './entry_popups';

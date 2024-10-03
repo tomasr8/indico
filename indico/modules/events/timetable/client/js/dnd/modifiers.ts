@@ -36,6 +36,16 @@ export const createRestrictToElement = containerRef => ({draggingNodeRect, trans
   if (!draggingNodeRect || !containerRef.current) {
     return transform;
   }
-  const rect = containerRef.current.getBoundingClientRect();
+  let rect = containerRef.current.getBoundingClientRect();
+  rect = {
+    top: rect.top + window.scrollY,
+    left: rect.left + window.scrollX,
+    bottom: rect.bottom + window.scrollY,
+    right: rect.right + window.scrollX,
+    width: rect.width,
+    height: rect.height,
+  };
+  // console.log('calendar rect', rect);
+  // console.log('draggingNodeRect', draggingNodeRect);
   return restrictToBoundingRect(transform, draggingNodeRect, rect);
 };

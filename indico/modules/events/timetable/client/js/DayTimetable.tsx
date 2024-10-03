@@ -7,7 +7,7 @@ import {
   PointerSensor,
   useSensors,
 } from '@dnd-kit/core';
-import {createSnapModifier, restrictToParentElement} from '@dnd-kit/modifiers';
+import {createSnapModifier} from '@dnd-kit/modifiers';
 import moment, {Moment} from 'moment';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
@@ -21,7 +21,7 @@ import {TopLevelEntry, BlockEntry, ChildEntry} from './types';
 import {minutesToPixels, pixelsToMinutes} from './utils';
 import UnscheduledContributions from './UnscheduledContributions';
 import {useDroppable, DnDProvider} from './dnd/dnd';
-import {createRestrictToElement} from './dnd';
+import {createRestrictToElement, Transform, Over, MousePosition} from './dnd';
 
 interface DayTimetableProps {
   dt: Moment;
@@ -137,12 +137,14 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
 
   entries = computeYoffset(entries, minHour);
 
-  function handleDragEnd(who, where, delta, mouse, rect) {
-    console.log('handleDragEnd', who, where, delta, mouse, rect);
-    if (where === 'calendar') {
-      handleDropOnCalendar(who, delta, mouse, rect);
+  function handleDragEnd(who, over, delta, mouse) {
+    console.log('handleDragEnd', who, where, delta, mouse);
+    const calendar = over.find(o => o.id === 'calendar');
+    if (calendar && over.length === 1) {
+      handleDropOnCalendar(who, delta, mouse, calendar.rect);
     } else {
-      // handleDropOnBlock(event);
+      const block = over.find(o => o.id !== 'calendar');
+      handleDropOnBlock(who, block, delta, mouse);
     }
   }
 
@@ -287,34 +289,25 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
     }
   }
 
-  function handleDropOnBlock(event: DragEndEvent) {
-    if (!event.over) {
-      return;
-    }
+  function handleDropOnBlock(who: string, over: Over, delta: Transform, mouse: MousePosition) {
+    // console.log('handleDropOnBlock', event);
 
-    if (mouseEventRef.current === null) {
-      return;
-    }
-
-    console.log('handleDropOnBlock', event);
-
-    const overId = event.over.id;
+    const id = parseInt(who, 10);
+    const overId = parseInt(over.id, 10);
     const toBlock: BlockEntry = entries.find(entry => entry.id === overId)! as BlockEntry;
     const fromBlock = entries
       .filter(e => e.type === 'block')
-      .find(entry => !!entry.children.find(c => c.id === event.active.id));
+      .find(entry => !!entry.children.find(c => c.id === id));
 
-    console.log(overId, toBlock, fromBlock);
+    console.log(id, overId, toBlock, fromBlock);
 
-    const {id} = event.active;
-    const {x, y} = event.delta;
+    const {x, y} = delta;
     const deltaMinutes = Math.ceil(pixelsToMinutes(y) / 5) * 5;
-    const mousePosition =
-      (mouseEventRef.current.pageX - event.over.rect.left) / event.over.rect.width;
+    const mousePosition = (mouse.x - over.rect.left) / over.rect.width;
 
     let entry: ChildEntry | undefined;
     if (!fromBlock) {
-      entry = entries.find(e => e.id === event.active.id) as ChildEntry; // TODO: fix this
+      entry = entries.find(e => e.id == id) as ChildEntry; // TODO: fix this
       if (!entry || entry.type !== 'break') {
         return;
       }
