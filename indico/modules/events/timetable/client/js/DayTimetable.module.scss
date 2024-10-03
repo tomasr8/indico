@@ -46,6 +46,7 @@
   border-radius: 8px;
   position: relative;
   display: flex;
+  flex-direction: column;
   cursor: unset;
   border: none;
   padding: 0;
@@ -64,6 +65,7 @@
   text-align: left;
   font-size: 15px;
   width: 100%;
+  flex-grow: 1;
 }
 
 .resize-handle {

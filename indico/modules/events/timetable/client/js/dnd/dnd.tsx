@@ -1,17 +1,28 @@
 import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
 import {createContext, useContextSelector} from 'use-context-selector';
 
+interface Rect {
+  top: number;
+  left: number;
+  right: number;
+  bottom: number;
+  width: number;
+  height: number;
+}
+
 interface Droppable {
   node: HTMLElement;
 }
 
 interface Draggable {
+  node: HTMLElement;
+  rect?: Rect;
   transform?: {x: number; y: number};
   active?: boolean;
 }
 
 function removeKey(obj, deleteKey) {
-  const {[deleteKey]: _, ...newObj} = obj;
+  const {[deleteKey]: _, ...newObj} = obj; // eslint-disable-line @typescript-eslint/no-unused-vars
   return newObj;
 }
 
@@ -28,28 +39,51 @@ interface DnDState {
   activeDraggable: string;
 }
 
+interface Over {
+  id: string;
+  rect: Rect;
+}
+
+type OnDrop = (who: string, over: Over | Over[], mouse: MousePosition) => void;
+
 interface DnDContextType {
   droppables: Record<string, Droppable>;
   draggables: Record<string, Draggable>;
-  onDrop: (draggableId: string, droppableId: string) => void;
+  onDrop: OnDrop;
   registerDroppable: (id: string, node: HTMLElement) => void;
   unregisterDroppable: (id: string) => void;
-  registerDraggable: (id: string) => void;
+  registerDraggable: (id: string, node: HTMLElement) => void;
   unregisterDraggable: (id: string) => void;
-  onMouseDown: (id: string, position: {x: number; y: number}) => void;
+  onMouseDown: (id: string, position: MousePosition) => void;
 }
 const DnDContext = createContext<DnDContextType>({
   droppables: {},
   draggables: {},
-  onDrop: () => {},
-  registerDroppable: () => {},
-  unregisterDroppable: () => {},
-  registerDraggable: () => {},
-  unregisterDraggable: () => {},
-  onMouseDown: () => {},
+  onDrop: null,
+  registerDroppable: null,
+  unregisterDroppable: null,
+  registerDraggable: null,
+  unregisterDraggable: null,
+  onMouseDown: null,
 });
 
-export function DnDProvider({children, onDrop}: {children: React.ReactNode; onDrop: any}) {
+type Modifier = ({
+  draggingNodeRect,
+  transform,
+}: {
+  draggingNodeRect: Rect;
+  transform: MousePosition;
+}) => MousePosition;
+
+export function DnDProvider({
+  children,
+  onDrop,
+  modifier = ({transform}) => transform,
+}: {
+  children: React.ReactNode;
+  onDrop: OnDrop;
+  modifier?: Modifier;
+}) {
   const [droppables, setDroppables] = useState({});
   const [draggables, setDraggables] = useState({});
   const state = useRef<DnDState>({
@@ -67,8 +101,8 @@ export function DnDProvider({children, onDrop}: {children: React.ReactNode; onDr
     setDroppables(d => removeKey(d, id));
   }, []);
 
-  const registerDraggable = useCallback(id => {
-    setDraggables(d => ({...d, [id]: {}}));
+  const registerDraggable = useCallback((id, node) => {
+    setDraggables(d => ({...d, [id]: {node}}));
   }, []);
 
   const unregisterDraggable = useCallback(id => {
@@ -91,6 +125,13 @@ export function DnDProvider({children, onDrop}: {children: React.ReactNode; onDr
         scrollPosition: {x: window.scrollX, y: window.scrollY},
         activeDraggable: id,
       };
+      setDraggables(d => ({
+        ...d,
+        [state.current.activeDraggable]: {
+          ...d[state.current.activeDraggable],
+          rect: d[state.current.activeDraggable].node.getBoundingClientRect(),
+        },
+      }));
     }
   }, []);
 
@@ -103,16 +144,20 @@ export function DnDProvider({children, onDrop}: {children: React.ReactNode; onDr
         setDraggables(d => ({
           ...d,
           [state.current.activeDraggable]: {
+            ...d[state.current.activeDraggable],
             active: true,
-            transform: {
-              x: e.pageX - state.current.initialMousePosition.x,
-              y: e.pageY - state.current.initialMousePosition.y,
-            },
+            transform: modifier({
+              draggingNodeRect: d[state.current.activeDraggable].rect,
+              transform: {
+                x: e.pageX - state.current.initialMousePosition.x,
+                y: e.pageY - state.current.initialMousePosition.y,
+              },
+            }),
           },
         }));
       }
     },
-    [state]
+    [state, modifier]
   );
 
   const onMouseUp = useCallback(
@@ -160,8 +205,10 @@ export function DnDProvider({children, onDrop}: {children: React.ReactNode; onDr
       setDraggables(d => ({
         ...d,
         [state.current.activeDraggable]: {
+          ...d[state.current.activeDraggable],
           active: false,
           transform: null,
+          rect: null,
         },
       }));
     },
@@ -176,6 +223,7 @@ export function DnDProvider({children, onDrop}: {children: React.ReactNode; onDr
       setDraggables(d => ({
         ...d,
         [state.current.activeDraggable]: {
+          ...d[state.current.activeDraggable],
           active: true,
           transform: {
             x: d[state.current.activeDraggable].x + deltaX,
@@ -261,10 +309,17 @@ function pointerInside(
 }
 
 export function useDraggable({id}: {id: string}) {
+  const ref = useRef<HTMLElement | null>(null);
   const _onMouseDown = useContextSelector(DnDContext, ctx => ctx.onMouseDown);
   const draggable = useContextSelector(DnDContext, ctx => ctx.draggables[id]);
   const registerDraggable = useContextSelector(DnDContext, ctx => ctx.registerDraggable);
   const unregisterDraggable = useContextSelector(DnDContext, ctx => ctx.unregisterDraggable);
+
+  const setNodeRef = useCallback((node: HTMLElement | null) => {
+    if (node) {
+      ref.current = node;
+    }
+  }, []);
 
   const onMouseDown = useCallback(
     (e: MouseEvent) => {
@@ -276,7 +331,9 @@ export function useDraggable({id}: {id: string}) {
   );
 
   useEffect(() => {
-    registerDraggable(id);
+    if (ref.current) {
+      registerDraggable(id, ref.current);
+    }
 
     return () => {
       unregisterDraggable(id);
@@ -286,6 +343,7 @@ export function useDraggable({id}: {id: string}) {
   const transform = (draggable || {}).transform;
 
   return {
+    setNodeRef,
     transform,
     isDragging: !!transform,
     listeners: {onMouseDown},

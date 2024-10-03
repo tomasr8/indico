@@ -1,12 +1,13 @@
-import {Modifier} from '@dnd-kit/core';
-import {ClientRect} from '@dnd-kit/core';
-import {Transform} from '@dnd-kit/utilities';
+import {Rect, Transform} from './types';
 
-export function restrictToBoundingRect(
-  transform: Transform,
-  rect: ClientRect,
-  boundingRect: ClientRect
-): Transform {
+/**
+ * Restrict a rect to be contained within another bounding rect. Taken from dnd-kit.
+ * @param transform - the current transform of the element being dragged
+ * @param rect - the rect which should be contained
+ * @param boundingRect - the bounding rect of the container
+ * @returns
+ */
+function restrictToBoundingRect(transform: Transform, rect: Rect, boundingRect: Rect): Transform {
   const value = {
     ...transform,
   };
@@ -26,6 +27,11 @@ export function restrictToBoundingRect(
   return value;
 }
 
+/**
+ * Restrict the dragged node to be contained within the container element
+ * @param containerRef React ref to the container element
+ * @returns A new Transform object
+ */
 export const createRestrictToElement = containerRef => ({draggingNodeRect, transform}) => {
   if (!draggingNodeRect || !containerRef.current) {
     return transform;

@@ -9,7 +9,7 @@ import {
 } from '@dnd-kit/core';
 import {createSnapModifier, restrictToParentElement} from '@dnd-kit/modifiers';
 import moment, {Moment} from 'moment';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
 import './DayTimetable.module.scss';
@@ -20,8 +20,8 @@ import {computeYoffset, getGroup, layout, layoutGroupAfterMove} from './layout';
 import {TopLevelEntry, BlockEntry, ChildEntry} from './types';
 import {minutesToPixels, pixelsToMinutes} from './utils';
 import UnscheduledContributions from './UnscheduledContributions';
+import {useDroppable, DnDProvider} from './dnd/dnd';
 import {createRestrictToElement} from './dnd';
-import {useDroppable, DnDProvider} from './hooks';
 
 interface DayTimetableProps {
   dt: Moment;
@@ -467,7 +467,7 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
     };
   }, []);
 
-  const restrictToCalendar = createRestrictToElement(calendarRef);
+  const restrictToCalendar = useMemo(() => createRestrictToElement(calendarRef), [calendarRef]);
 
   return (
     // <DndContext
@@ -477,7 +477,7 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
     //   collisionDetection={pointerWithin}
     //   sensors={sensors}
     // >
-    <DnDProvider onDrop={handleDragEnd}>
+    <DnDProvider onDrop={handleDragEnd} modifier={restrictToCalendar}>
       <UnscheduledContributions />
       <div styleName="wrapper">
         <TimeGutter minHour={minHour} maxHour={maxHour} />

@@ -9,7 +9,7 @@ import {ChildEntry, ContribEntry, BreakEntry, BlockEntry} from './types';
 import {minutesToPixels, pixelsToMinutes} from './utils';
 import * as actions from './actions';
 import * as selectors from './selectors';
-import {useDraggable, useDroppable} from './hooks';
+import {useDraggable, useDroppable} from './dnd/dnd';
 
 import './DayTimetable.module.scss';
 import {TimetablePopup} from './entry_popups';
@@ -106,6 +106,7 @@ function ResizeHandle({
 }
 
 function snap(x: number, gridSize: number = 5) {
+  // return x;
   return Math.ceil(x / gridSize) * gridSize;
 }
 
@@ -204,7 +205,7 @@ function _DraggableEntry({
     >
       <div
         styleName="drag-handle"
-        // ref={setNodeRef}
+        ref={setNodeRef}
         {...listeners}
         // {...attributes}
         onClick={e => {
@@ -260,7 +261,7 @@ export function DraggableEntry({id, ...rest}) {
       {...rest}
       // attributes={attributes}
       listeners={listeners}
-      // setNodeRef={setNodeRef}
+      setNodeRef={setNodeRef}
       transform={transform}
       isDragging={isDragging}
     />
@@ -408,7 +409,7 @@ export function _DraggableBlockEntry({
     <button type="button" styleName="entry block" style={style}>
       <div
         styleName="drag-handle"
-        // ref={setNodeRef}
+        ref={setNodeRef}
         style={{
           cursor: isResizing ? undefined : isDragging ? 'grabbing' : 'grab',
           display: 'flex',
@@ -474,7 +475,7 @@ export function DraggableBlockEntry({id, ...rest}) {
       {...rest}
       // attributes={attributes}
       listeners={listeners}
-      // setNodeRef={setNodeRef}
+      setNodeRef={setNodeRef}
       transform={transform}
       isDragging={isDragging}
     />
