@@ -8,7 +8,6 @@
 import _ from 'lodash';
 import PropTypes from 'prop-types';
 import React, {useEffect, useState} from 'react';
-import {useDraggable} from '@dnd-kit/core';
 import {Field, Form as FinalForm} from 'react-final-form';
 import {useDispatch, useSelector} from 'react-redux';
 import {Form, Icon} from 'semantic-ui-react';
@@ -18,6 +17,7 @@ import {FinalInput, FinalSubmitButton} from 'indico/react/forms';
 import {Param, Translate} from 'indico/react/i18n';
 
 import * as actions from './actions';
+import {useDraggable} from './dnd';
 import {ContributionDetails} from './EntryDetails';
 import * as selectors from './selectors';
 import {entrySchema, entryTypes, formatTitle} from './util';

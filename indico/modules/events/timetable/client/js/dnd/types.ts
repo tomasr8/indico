@@ -1,3 +1,5 @@
+import {MutableRefObject} from 'react';
+
 interface Coords {
   x: number;
   y: number;
@@ -5,7 +7,6 @@ interface Coords {
 
 export type MousePosition = Coords;
 export type Transform = Coords;
-export type UniqueId = string | number;
 
 export interface Rect {
   top: number;
@@ -19,26 +20,29 @@ export interface Rect {
 export type DragState = 'idle' | 'mousedown' | 'dragging';
 
 export interface Over {
-  id: UniqueId;
+  id: string;
   rect: Rect;
 }
 
+export type HTMLRef = MutableRefObject<HTMLElement | null>;
+
 export interface Droppable {
-  node: HTMLElement;
+  node: HTMLRef;
 }
 
 export interface Draggable {
-  node: HTMLElement;
+  node: HTMLRef;
   rect?: Rect;
   transform?: {x: number; y: number};
 }
 
-export type OnDrop = (
-  who: UniqueId,
-  over: Over | Over[],
-  delta: Transform,
-  mouse: MousePosition
-) => void;
+export interface DragEvent {
+  who: string;
+  over: Over[];
+  delta: Transform;
+  mouse: MousePosition;
+}
+export type OnDrop = (who: string, over: Over[], delta: Transform, mouse: MousePosition) => void;
 
 export type Modifier = ({
   draggingNodeRect,

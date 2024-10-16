@@ -138,9 +138,6 @@ function _DraggableEntry({
   const [open, setOpen] = useState(!!selected);
   const [duration, setDuration] = useState(_duration);
   const popupRef = useRef<HTMLButtonElement | null>(null);
-  // const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
-  //   id,
-  // });
   // console.log('transform', transform);
   let style: Record<string, string | number | undefined> = transform
     ? {
@@ -154,7 +151,7 @@ function _DraggableEntry({
     top: y,
     left: x,
     width: column === maxColumn ? width : `calc(${width} - 6px)`,
-    height: minutesToPixels(duration - 2),
+    height: minutesToPixels(Math.max(duration, minutesToPixels(5)) - 2),
     zIndex: isResizing ? 900 : selected ? 800 : style.zIndex,
     cursor: isResizing ? undefined : isDragging ? 'grabbing' : 'grab',
     filter: selected ? 'drop-shadow(0 0 2px #000)' : undefined,
@@ -187,14 +184,6 @@ function _DraggableEntry({
   useEffect(() => {
     setDuration(_duration);
   }, [_duration]);
-
-  // console.log(listeners);
-
-  // return (
-  //   <button type="button" styleName={`entry`} style={style}>
-  //     test
-  //   </button>
-  // );
 
   const trigger = (
     <button
@@ -252,7 +241,7 @@ const DraggableEntryMemo = React.memo(_DraggableEntry);
 
 export function DraggableEntry({id, ...rest}) {
   const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
-    id,
+    id: `${id}`,
   });
 
   return (
@@ -279,7 +268,7 @@ function ContributionTitle({
   end: string;
   duration: number;
 }) {
-  if (duration <= 10) {
+  if (duration <= 12) {
     return (
       <div
         style={{
@@ -344,11 +333,9 @@ export function _DraggableBlockEntry({
   const resizeStartRef = useRef(null);
   const [isResizing, setIsResizing] = useState(false);
   const [duration, setDuration] = useState(_duration);
-  // const {attributes, listeners, setNodeRef, transform, isDragging} = useDraggable({
-  //   id,
-  // });
+  // console.log('duration', _setDuration);
   const {setNodeRef: setDroppableNodeRef} = useDroppable({
-    id,
+    id: `${id}`,
     // disabled: true,
   });
   let style: Record<string, string | number | undefined> = transform
@@ -437,9 +424,9 @@ export function _DraggableBlockEntry({
             <DraggableEntry
               key={child.id}
               selected={child.id === selectedId}
-              // setDuration={makeSetDuration(child.id)}
+              setDuration={makeSetDuration(child.id)}
               // parentEndDt={moment(startDt).add(deltaMinutes + duration, 'minutes')}
-              setDuration={null}
+              // setDuration={null}
               parentEndDt={moment(startDt)
                 .add(deltaMinutes + duration, 'minutes')
                 .format()}

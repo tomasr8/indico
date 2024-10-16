@@ -10,29 +10,29 @@ import {
   Draggable,
   Over,
   Transform,
-  UniqueId,
+  HTMLRef,
 } from './types';
 import {pointerInside} from './utils';
 
-type Droppables = Record<UniqueId, Droppable>;
-type Draggables = Record<UniqueId, Draggable>;
+type Droppables = Record<string, Droppable>;
+type Draggables = Record<string, Draggable>;
 
 interface DnDState {
   state: DragState;
   initialMousePosition: MousePosition;
   scrollPosition: MousePosition;
-  activeDraggable?: UniqueId;
+  activeDraggable?: string;
 }
 
 interface DnDContextType {
   droppables: Droppables;
   draggables: Draggables;
   onDrop: OnDrop;
-  registerDroppable: (id: UniqueId, node: HTMLElement) => void;
-  unregisterDroppable: (id: UniqueId) => void;
-  registerDraggable: (id: UniqueId, node: HTMLElement) => void;
-  unregisterDraggable: (id: UniqueId) => void;
-  onMouseDown: (id: UniqueId, position: MousePosition) => void;
+  registerDroppable: (id: string, node: HTMLRef) => void;
+  unregisterDroppable: (id: string) => void;
+  registerDraggable: (id: string, node: HTMLRef) => void;
+  unregisterDraggable: (id: string) => void;
+  onMouseDown: (id: string, position: MousePosition) => void;
 }
 const DnDContext = createContext<DnDContextType>({
   droppables: {},
@@ -50,9 +50,12 @@ function removeKey(obj, deleteKey) {
   return newObj;
 }
 
-function setBoundingRect(draggables: Draggables, id: UniqueId) {
+function setBoundingRect(draggables: Draggables, id: string) {
   const draggable = draggables[id];
-  const boundingRect = draggable.node.getBoundingClientRect();
+  if (!draggable.node) {
+    return draggables;
+  }
+  const boundingRect = draggable.node.current.getBoundingClientRect();
   const rect = {
     top: boundingRect.top + window.scrollY,
     left: boundingRect.left + window.scrollX,
@@ -70,7 +73,7 @@ function setBoundingRect(draggables: Draggables, id: UniqueId) {
   };
 }
 
-function resetDraggableState(draggables: Draggables, id: UniqueId) {
+function resetDraggableState(draggables: Draggables, id: string) {
   const draggable = draggables[id];
   return {
     ...draggables,
@@ -84,7 +87,7 @@ function resetDraggableState(draggables: Draggables, id: UniqueId) {
 
 function setTransform(
   draggables: Draggables,
-  id: UniqueId,
+  id: string,
   initialMousePosition: MousePosition,
   currentMousePosition: MousePosition,
   modifier: Modifier
@@ -108,7 +111,7 @@ function setTransform(
 
 function setTransformOnScroll(
   draggables: Draggables,
-  id: UniqueId,
+  id: string,
   delta: Transform,
   modifier: Modifier
 ) {
@@ -133,7 +136,10 @@ function getOverlappingDroppables(droppables: Droppables, mouse: MousePosition):
   const overlapping = [];
   for (const droppableId in droppables) {
     const droppable = droppables[droppableId];
-    const boundingRect = droppable.node.getBoundingClientRect();
+    if (!droppable.node.current) {
+      continue;
+    }
+    const boundingRect = droppable.node.current.getBoundingClientRect();
     const rect = {
       top: boundingRect.top + window.scrollY,
       left: boundingRect.left + window.scrollX,
@@ -142,7 +148,6 @@ function getOverlappingDroppables(droppables: Droppables, mouse: MousePosition):
       width: boundingRect.width,
       height: boundingRect.height,
     };
-    // console.log({x: e.pageX, y: e.pageY}, rect, droppable.node.getBoundingClientRect());
     if (pointerInside(mouse, rect)) {
       console.log('dropped inside', droppableId);
       overlapping.push({id: droppableId, rect});
@@ -299,7 +304,7 @@ export function DnDProvider({
   return <DnDContext.Provider value={value}>{children}</DnDContext.Provider>;
 }
 
-export function useDroppable({id}: {id: UniqueId}) {
+export function useDroppable({id}: {id: string}) {
   const ref = useRef<HTMLElement | null>(null);
   const registerDroppable = useContextSelector(DnDContext, ctx => ctx.registerDroppable);
   const unregisterDroppable = useContextSelector(DnDContext, ctx => ctx.unregisterDroppable);
@@ -312,7 +317,7 @@ export function useDroppable({id}: {id: UniqueId}) {
 
   useEffect(() => {
     if (ref.current) {
-      registerDroppable(id, ref.current);
+      registerDroppable(id, ref);
     }
 
     return () => {
@@ -323,7 +328,7 @@ export function useDroppable({id}: {id: UniqueId}) {
   return {setNodeRef};
 }
 
-export function useDraggable({id}: {id: UniqueId}) {
+export function useDraggable({id}: {id: string}) {
   const ref = useRef<HTMLElement | null>(null);
   const _onMouseDown = useContextSelector(DnDContext, ctx => ctx.onMouseDown);
   const draggable = useContextSelector(DnDContext, ctx => ctx.draggables[id]);
@@ -347,7 +352,7 @@ export function useDraggable({id}: {id: UniqueId}) {
 
   useEffect(() => {
     if (ref.current) {
-      registerDraggable(id, ref.current);
+      registerDraggable(id, ref);
     }
 
     return () => {
