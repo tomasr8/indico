@@ -4,15 +4,14 @@ import moment from 'moment';
 import React, {useEffect, useRef, useState, MouseEvent as SyntheticMouseEvent} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
-import {layout} from './layout';
-import {ChildEntry, ContribEntry, BreakEntry, BlockEntry} from './types';
-import {minutesToPixels, pixelsToMinutes} from './utils';
 import * as actions from './actions';
-import * as selectors from './selectors';
 import {useDraggable, useDroppable} from './dnd';
+import {TimetablePopup} from './entry_popups';
+import * as selectors from './selectors';
+import {ContribEntry, BreakEntry, BlockEntry} from './types';
+import {minutesToPixels, pixelsToMinutes} from './utils';
 
 import './DayTimetable.module.scss';
-import {TimetablePopup} from './entry_popups';
 
 interface _DraggableEntryProps {
   selected: boolean;
@@ -29,7 +28,7 @@ const gridSize = minutesToPixels(5);
 function ResizeHandle({
   forBlock = false,
   duration,
-  minDuration,
+  minDuration = 10,
   maxDuration,
   resizeStartRef,
   setLocalDuration,
@@ -76,16 +75,16 @@ function ResizeHandle({
 
       let dy = e.clientY - resizeStartRef.current;
       dy = Math.ceil(dy / gridSize) * gridSize;
-      const newDuration = duration + pixelsToMinutes(dy);
+      let newDuration = duration + pixelsToMinutes(dy);
 
-      if (
-        (minDuration && newDuration < minDuration) ||
-        (maxDuration && newDuration > maxDuration)
-      ) {
-        setLocalDuration(duration); // reset to original duration
-      } else if (newDuration >= 10) {
-        setGlobalDuration(newDuration);
+      if (minDuration !== undefined) {
+        newDuration = Math.max(newDuration, minDuration);
       }
+
+      if (maxDuration !== undefined) {
+        newDuration = Math.min(newDuration, maxDuration);
+      }
+      setGlobalDuration(newDuration);
       setIsResizing(false);
     };
 
@@ -425,8 +424,6 @@ export function _DraggableBlockEntry({
               key={child.id}
               selected={child.id === selectedId}
               setDuration={makeSetDuration(child.id)}
-              // parentEndDt={moment(startDt).add(deltaMinutes + duration, 'minutes')}
-              // setDuration={null}
               parentEndDt={moment(startDt)
                 .add(deltaMinutes + duration, 'minutes')
                 .format()}

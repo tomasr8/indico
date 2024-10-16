@@ -26,6 +26,7 @@ function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) 
 
   const makeSetDuration = useCallback(
     (id: number) => (duration: number) => {
+      console.log(id, duration);
       const newEntries = layout(
         entries.map(entry => {
           if (entry.id === id) {
