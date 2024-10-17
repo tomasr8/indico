@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
 import {createContext, useContextSelector} from 'use-context-selector';
 
+import {useScrollIntent} from './scroll';
 import {
   MousePosition,
   Modifier,
@@ -174,6 +175,8 @@ export function DnDProvider({
     activeDraggable: null,
   });
 
+  useScrollIntent({enabled: state.current.state === 'dragging'});
+
   const registerDroppable = useCallback((id, node) => {
     setDroppables(d => ({...d, [id]: {node}}));
   }, []);
@@ -334,7 +337,6 @@ export function useDraggable({id}: {id: string}) {
   const draggable = useContextSelector(DnDContext, ctx => ctx.draggables[id]);
   const registerDraggable = useContextSelector(DnDContext, ctx => ctx.registerDraggable);
   const unregisterDraggable = useContextSelector(DnDContext, ctx => ctx.unregisterDraggable);
-  // console.log('transform', (draggable || {}).transform);
 
   const setNodeRef = useCallback((node: HTMLElement | null) => {
     if (node) {
