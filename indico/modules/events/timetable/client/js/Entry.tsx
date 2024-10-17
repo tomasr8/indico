@@ -141,7 +141,7 @@ function _DraggableEntry({
   let style: Record<string, string | number | undefined> = transform
     ? {
         transform: `translate3d(${transform.x}px, ${snap(transform.y, 10)}px, 0)`,
-        zIndex: 900,
+        zIndex: 90,
       }
     : {};
   style = {
@@ -151,7 +151,7 @@ function _DraggableEntry({
     left: x,
     width: column === maxColumn ? width : `calc(${width} - 6px)`,
     height: minutesToPixels(Math.max(duration, minutesToPixels(5)) - 2),
-    zIndex: isResizing ? 900 : selected ? 800 : style.zIndex,
+    zIndex: isResizing ? 90 : selected ? 80 : style.zIndex,
     cursor: isResizing ? undefined : isDragging ? 'grabbing' : 'grab',
     filter: selected ? 'drop-shadow(0 0 2px #000)' : undefined,
   };
@@ -324,6 +324,7 @@ export function _DraggableBlockEntry({
   setNodeRef,
   transform,
   isDragging,
+  renderChildren = true,
 }: DraggableBlockEntryProps) {
   const dispatch = useDispatch();
   // console.log('rereendering block', id);
@@ -340,7 +341,7 @@ export function _DraggableBlockEntry({
   let style: Record<string, string | number | undefined> = transform
     ? {
         transform: `translate3d(${transform.x}px, ${snap(transform.y, 10)}px, 0)`,
-        zIndex: 900,
+        zIndex: 90,
       }
     : {};
   style = {
@@ -351,7 +352,7 @@ export function _DraggableBlockEntry({
     width: column === maxColumn ? width : `calc(${width} - 6px)`,
     height: minutesToPixels(duration - 2),
     textAlign: 'left',
-    zIndex: isResizing ? 900 : selected ? 800 : style.zIndex,
+    zIndex: isResizing ? 90 : selected ? 80 : style.zIndex,
     filter: selected ? 'drop-shadow(0 0 2px #000)' : undefined,
   };
 
@@ -419,17 +420,19 @@ export function _DraggableBlockEntry({
             borderRadius: 6,
           }}
         >
-          {children.map(child => (
-            <DraggableEntry
-              key={child.id}
-              selected={child.id === selectedId}
-              setDuration={makeSetDuration(child.id)}
-              parentEndDt={moment(startDt)
-                .add(deltaMinutes + duration, 'minutes')
-                .format()}
-              {...child}
-            />
-          ))}
+          {renderChildren
+            ? children.map(child => (
+                <DraggableEntry
+                  key={child.id}
+                  selected={child.id === selectedId}
+                  setDuration={makeSetDuration(child.id)}
+                  parentEndDt={moment(startDt)
+                    .add(deltaMinutes + duration, 'minutes')
+                    .format()}
+                  {...child}
+                />
+              ))
+            : null}
         </div>
       </div>
       {/* TODO cannot resize to be smaller than its contents */}

@@ -200,11 +200,19 @@ interface TimeGutterProps {
   maxHour: number;
 }
 
-function Lines({minHour, maxHour}: TimeGutterProps) {
+export function Lines({
+  minHour,
+  maxHour,
+  first = true,
+}: {
+  minHour: number;
+  maxHour: number;
+  first: boolean;
+}) {
   const oneHour = minutesToPixels(60);
 
   return (
-    <div styleName="lines">
+    <div styleName={`lines ${first ? 'first' : ''}`}>
       {Array.from({length: maxHour - minHour + 1}, (_, i) => (
         <div key={i} style={{height: oneHour}} styleName="line" />
       ))}
@@ -212,7 +220,7 @@ function Lines({minHour, maxHour}: TimeGutterProps) {
   );
 }
 
-function TimeGutter({minHour, maxHour}: TimeGutterProps) {
+export function TimeGutter({minHour, maxHour}: TimeGutterProps) {
   const oneHour = minutesToPixels(60);
 
   return (

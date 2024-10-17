@@ -6,7 +6,7 @@ import {lcm, minutesToPixels} from './utils.ts';
 function overlap<T extends Entry>(a: T, b: T) {
   const aEnd = a.startDt.clone().add(a.duration, 'minutes');
   const bEnd = b.startDt.clone().add(b.duration, 'minutes');
-  return a.startDt < bEnd && b.startDt < aEnd;
+  return a.startDt.isBefore(bEnd) && b.startDt.isBefore(aEnd);
 }
 
 export function layoutDays(dayEntries: DayEntries): DayEntries {

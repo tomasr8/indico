@@ -24,6 +24,7 @@ import 'react-big-calendar/lib/addons/dragAndDrop/styles.scss';
 import './Timetable.module.scss';
 import {getEarliestDate} from './utils';
 import {DayTimetable} from './DayTimetable';
+import {WeekTimetable} from './WeekTimetable';
 
 // const localizer = momentLocalizer(moment);
 // const DnDCalendar = withDragAndDrop(Calendar);
@@ -46,20 +47,40 @@ export default function Timetable() {
   }
   const popupsEnabled = useSelector(selectors.getPopupsEnabled);
 
+  const useWeekView = true;
+
   const minHour = Math.max(
     0,
-    Math.min(...currentDateEntries.map(e => moment(e.startDt).hour())) - 1
+    useWeekView
+      ? Math.min(
+          ...Object.values(entries)
+            .flat()
+            .map(e => moment(e.startDt).hour())
+        ) - 1
+      : Math.min(...currentDateEntries.map(e => moment(e.startDt).hour())) - 1
   );
   const maxHour = Math.min(
     24,
-    Math.max(
-      ...currentDateEntries.map(e =>
-        moment(e.startDt)
-          .add(e.duration, 'minutes')
-          .hour()
-      )
-    ) + 1
+    useWeekView
+      ? Math.max(
+          ...Object.values(entries)
+            .flat()
+            .map(e =>
+              moment(e.startDt)
+                .add(e.duration, 'minutes')
+                .hour()
+            )
+        ) + 1
+      : Math.max(
+          ...currentDateEntries.map(e =>
+            moment(e.startDt)
+              .add(e.duration, 'minutes')
+              .hour()
+          )
+        ) + 1
   );
+
+  console.log('minHour', minHour, 'maxHour', maxHour);
 
   useEffect(() => {
     function onKeydown(e: KeyboardEvent) {
@@ -86,7 +107,15 @@ export default function Timetable() {
       </div>
       <Toolbar date={date} onNavigate={d => setDate(d)} />
       <div styleName="content">
-        <DayTimetable dt={date} minHour={minHour} maxHour={maxHour} entries={currentDateEntries} />
+        {useWeekView && <WeekTimetable minHour={minHour} maxHour={maxHour} entries={entries} />}
+        {!useWeekView && (
+          <DayTimetable
+            dt={date}
+            minHour={minHour}
+            maxHour={maxHour}
+            entries={currentDateEntries}
+          />
+        )}
         {!popupsEnabled && selectedEntry && <EntryDetails entry={selectedEntry} />}
         <ContributionEntryForm />
       </div>
