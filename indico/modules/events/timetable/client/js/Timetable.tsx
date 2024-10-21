@@ -11,6 +11,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {Checkbox} from 'semantic-ui-react';
 
 import * as actions from './actions';
+import {DayTimetable} from './DayTimetable';
 import Entry from './Entry';
 import EntryDetails from './EntryDetails';
 import ContributionEntryForm from './forms/ContributionEntryForm';
@@ -21,9 +22,9 @@ import UnscheduledContributions from './UnscheduledContributions';
 
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.scss';
 
+import './timetable.scss';
 import './Timetable.module.scss';
 import {getEarliestDate} from './utils';
-import {DayTimetable} from './DayTimetable';
 import {WeekTimetable} from './WeekTimetable';
 
 // const localizer = momentLocalizer(moment);
@@ -97,17 +98,17 @@ export default function Timetable() {
 
   return (
     <div styleName={`timetable ${displayMode}`}>
-      <div style={{height: 50}}>
+      {/* <div style={{height: 50}}>
         <Checkbox
           toggle
           checked={popupsEnabled}
           onChange={() => dispatch(actions.experimentalTogglePopups())}
           label="Experminetal: Use popups instead of sidebar"
         />
-      </div>
+      </div> */}
       <Toolbar date={date} onNavigate={d => setDate(d)} />
       <div styleName="content">
-        {useWeekView && <WeekTimetable minHour={minHour} maxHour={maxHour} entries={entries} />}
+        {useWeekView && <WeekTimetable minHour={0} maxHour={24} entries={entries} />}
         {!useWeekView && (
           <DayTimetable
             dt={date}

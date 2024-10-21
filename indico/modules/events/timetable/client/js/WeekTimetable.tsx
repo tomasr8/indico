@@ -32,7 +32,7 @@ export function WeekTimetable({
 
   entries = Object.fromEntries(
     Object.entries(entries)
-    //   .slice(0, 5)
+      .slice(0, 5)
       .map(([dt, entries]) => [dt, computeYoffset(entries, minHour)])
   );
 
@@ -120,10 +120,12 @@ export function WeekTimetable({
   return (
     <DnDProvider onDrop={handleDragEnd} modifier={restrictToCalendar}>
       <UnscheduledContributions />
-      <div styleName="wrapper" ref={calendarRef}>
-        <TimeGutter minHour={minHour} maxHour={maxHour} />
-        {/* <div ref={calendarRef}>{days}</div> */}
-        {days}
+      <div className="wrapper">
+        <div styleName="wrapper" ref={calendarRef}>
+          <TimeGutter minHour={minHour} maxHour={maxHour} />
+          {/* <div ref={calendarRef}>{days}</div> */}
+          {days}
+        </div>
       </div>
     </DnDProvider>
   );

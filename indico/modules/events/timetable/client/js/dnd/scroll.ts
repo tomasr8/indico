@@ -3,7 +3,7 @@ import {useEffect, useRef} from 'react';
 import {MousePosition} from './types';
 
 const SCROLL_MARGIN_PERCENT = 0.1;
-const BASE_SPEED = 10;
+const BASE_SPEED = 20;
 
 type Timeout = ReturnType<typeof setInterval>;
 

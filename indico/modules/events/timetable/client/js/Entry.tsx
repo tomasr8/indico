@@ -472,7 +472,7 @@ export function DraggableBlockEntry({id, ...rest}) {
 function SessionBlockTitle({title, start, end}: {title: string; start: string; end: string}) {
   return (
     <div>
-      {title} ({start} - {end})
+      {title} {start} - {end}
     </div>
   );
 }

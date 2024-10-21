@@ -33,19 +33,37 @@ function restrictToBoundingRect(transform: Transform, rect: Rect, boundingRect: 
  * @returns A new Transform object
  */
 export const createRestrictToElement = containerRef => ({draggingNodeRect, transform}) => {
+  return transform; // XXX: testing only, this function needs fixing
   if (!draggingNodeRect || !containerRef.current) {
     return transform;
   }
+
   let rect = containerRef.current.getBoundingClientRect();
+  // TODO: There can be multiple scroll parents, we should walk up the tree and add
+  // the scroll offsets of all of them
+  const scrollParent = getScrollParent(containerRef.current);
   rect = {
-    top: rect.top + window.scrollY,
-    left: rect.left + window.scrollX,
-    bottom: rect.bottom + window.scrollY,
-    right: rect.right + window.scrollX,
+    top: rect.top + scrollParent.scrollTop,
+    left: rect.left + scrollParent.scrollLeft,
+    bottom: rect.bottom + scrollParent.scrollTop,
+    right: rect.right + scrollParent.scrollLeft,
     width: rect.width,
     height: rect.height,
   };
-  // console.log('calendar rect', rect);
-  // console.log('draggingNodeRect', draggingNodeRect);
   return restrictToBoundingRect(transform, draggingNodeRect, rect);
 };
+
+export function getScrollParent(element: HTMLElement): HTMLElement {
+  const overflowRegex = /(auto|scroll)/;
+  let parent: HTMLElement | undefined = element;
+  do {
+    parent = parent.parentElement;
+
+    const style = getComputedStyle(parent);
+    // console.log(parent, style.overflowY);
+    if (overflowRegex.test(style.overflow + style.overflowY + style.overflowX)) {
+      return parent;
+    }
+  } while (parent);
+  return document.body;
+}

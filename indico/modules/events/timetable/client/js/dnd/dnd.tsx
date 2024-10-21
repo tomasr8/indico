@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
 import {createContext, useContextSelector} from 'use-context-selector';
 
+import {getScrollParent} from './modifiers';
 import {useScrollIntent} from './scroll';
 import {
   MousePosition,
@@ -22,6 +23,7 @@ interface DnDState {
   state: DragState;
   initialMousePosition: MousePosition;
   scrollPosition: MousePosition;
+  initialScrollPosition: MousePosition;
   activeDraggable?: string;
 }
 
@@ -93,6 +95,7 @@ function setTransform(
   currentMousePosition: MousePosition,
   modifier: Modifier
 ) {
+  console.log('!!!setting transform', id, initialMousePosition, currentMousePosition);
   const draggable = draggables[id];
   const transform = modifier({
     draggingNodeRect: draggable.rect,
@@ -117,6 +120,15 @@ function setTransformOnScroll(
   modifier: Modifier
 ) {
   const draggable = draggables[id];
+  console.log(
+    'setting transform on scroll',
+    'before',
+    draggable.transform.y,
+    'delta',
+    delta.y,
+    'after',
+    draggable.transform.y + delta.y
+  );
   const transform = modifier({
     draggingNodeRect: draggable.rect,
     transform: {
@@ -124,6 +136,7 @@ function setTransformOnScroll(
       y: draggable.transform.y + delta.y,
     },
   });
+  console.log('>> set transform on scroll', transform.y);
   return {
     ...draggables,
     [id]: {
@@ -172,6 +185,7 @@ export function DnDProvider({
     state: 'idle',
     initialMousePosition: {x: 0, y: 0},
     scrollPosition: {x: 0, y: 0},
+    initialScrollPosition: {x: 0, y: 0},
     activeDraggable: null,
   });
 
@@ -195,23 +209,35 @@ export function DnDProvider({
         state: 'idle',
         initialMousePosition: {x: 0, y: 0},
         scrollPosition: {x: 0, y: 0},
+        initialScrollPosition: {x: 0, y: 0},
         activeDraggable: null,
       };
     }
     setDraggables(d => removeKey(d, id));
   }, []);
 
-  const onMouseDown = useCallback((id, {x, y}) => {
-    if (state.current.state === 'idle') {
-      state.current = {
-        state: 'mousedown',
-        initialMousePosition: {x, y},
-        scrollPosition: {x: window.scrollX, y: window.scrollY},
-        activeDraggable: id,
-      };
-      setDraggables(d => setBoundingRect(d, id));
-    }
-  }, []);
+  const onMouseDown = useCallback(
+    (id, {x, y}) => {
+      if (state.current.state === 'idle') {
+        const draggable = draggables[id];
+        if (!draggable) {
+          return;
+        }
+
+        const scrollParent = getScrollParent(draggable.node.current);
+
+        state.current = {
+          state: 'mousedown',
+          initialMousePosition: {x, y},
+          scrollPosition: {x: 0, y: 0},
+          initialScrollPosition: {x: scrollParent.scrollLeft, y: scrollParent.scrollTop},
+          activeDraggable: id,
+        };
+        setDraggables(d => setBoundingRect(d, id));
+      }
+    },
+    [draggables]
+  );
 
   const onMouseMove = useCallback(
     (e: MouseEvent) => {
@@ -224,10 +250,20 @@ export function DnDProvider({
             d,
             state.current.activeDraggable,
             state.current.initialMousePosition,
-            {x: e.pageX, y: e.pageY},
+            {
+              x: e.pageX + state.current.scrollPosition.x,
+              y: e.pageY + state.current.scrollPosition.y,
+            },
             modifier
           )
         );
+        // console.log(
+        //   '=== trans',
+        //   draggables[state.current.activeDraggable].transform,
+        //   e.pageY,
+        //   state.current.initialMousePosition.y,
+        //   state.current.scrollPosition.y
+        // );
       }
     },
     [state, modifier]
@@ -243,8 +279,8 @@ export function DnDProvider({
         const delta = modifier({
           draggingNodeRect: draggable.rect,
           transform: {
-            x: e.pageX - state.current.initialMousePosition.x,
-            y: e.pageY - state.current.initialMousePosition.y,
+            x: e.pageX + state.current.scrollPosition.x - state.current.initialMousePosition.x,
+            y: e.pageY + state.current.scrollPosition.y - state.current.initialMousePosition.y,
           },
         });
         onDrop(state.current.activeDraggable, overlapping, delta, mouse);
@@ -257,27 +293,49 @@ export function DnDProvider({
     [state, droppables, draggables, onDrop, modifier]
   );
 
-  const onScroll = useCallback(() => {
-    if (state.current.state === 'dragging') {
-      const deltaX = window.scrollX - state.current.scrollPosition.x;
-      const deltaY = window.scrollY - state.current.scrollPosition.y;
-      state.current.scrollPosition = {x: window.scrollX, y: window.scrollY};
+  const onScroll = useCallback(
+    (e: MouseEvent) => {
+      if (state.current.state !== 'dragging') {
+        return;
+      }
+
+      const target = e.target as HTMLElement;
+      const draggable = draggables[state.current.activeDraggable];
+
+      if (!target.contains(draggable.node.current)) {
+        return;
+      }
+
+      // console.log('scrolling', target.scrollLeft, target.scrollTop);
+      // const deltaX = window.scrollX - state.current.scrollPosition.x;
+      // const deltaY = window.scrollY - state.current.scrollPosition.y;
+      // get the container scroll position instead of the window scroll position
+      const deltaX =
+        target.scrollLeft - state.current.scrollPosition.x - state.current.initialScrollPosition.x;
+      const deltaY =
+        target.scrollTop - state.current.scrollPosition.y - state.current.initialScrollPosition.y;
+      state.current.scrollPosition = {
+        x: state.current.scrollPosition.x + deltaX,
+        y: state.current.scrollPosition.y + deltaY,
+      };
       // console.log('setting scroll', deltaX, deltaY);
       setDraggables(d =>
         setTransformOnScroll(d, state.current.activeDraggable, {x: deltaX, y: deltaY}, modifier)
       );
-    }
-  }, [modifier]);
+      // console.log('>>> trans', draggables[state.current.activeDraggable].transform);
+    },
+    [modifier, draggables]
+  );
 
   useEffect(() => {
     document.addEventListener('mouseup', onMouseUp);
     document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('scroll', onScroll);
+    document.addEventListener('scroll', onScroll, true);
 
     return () => {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
-      document.removeEventListener('scroll', onScroll);
+      document.removeEventListener('scroll', onScroll, true);
     };
   }, [onMouseUp, onMouseMove, onScroll]);
 

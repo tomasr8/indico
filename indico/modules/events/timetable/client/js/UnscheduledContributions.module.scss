@@ -14,10 +14,9 @@
   flex-shrink: 0;
 
   .content {
-    // position: sticky;
     top: 6em;
     height: 90vh;
-    // overflow-y: auto;
+    overflow-y: auto;
     padding-right: 0.8em;
 
     & > h4 {
