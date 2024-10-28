@@ -1,5 +1,16 @@
 import moment, {Moment} from 'moment';
 
+const GRID_SIZE_MINUTES = 5;
+const GRID_SIZE = minutesToPixels(GRID_SIZE_MINUTES);
+
+export function snapPixels(x: number) {
+  return Math.ceil(x / GRID_SIZE) * GRID_SIZE;
+}
+
+export function snapMinutes(x: number) {
+  return Math.ceil(x / GRID_SIZE_MINUTES) * GRID_SIZE_MINUTES;
+}
+
 export function minutesToPixels(minutes: number) {
   return Math.round(minutes * 2);
 }

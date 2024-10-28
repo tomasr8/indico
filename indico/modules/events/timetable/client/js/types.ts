@@ -2,8 +2,11 @@ import {Moment} from 'moment';
 
 type PercentWidth = number;
 
-interface Session {
-  id: number;
+export interface Session {
+  title: string;
+  isPoster: boolean;
+  textColor: string;
+  backgroundColor: string;
 }
 
 interface BaseEntry {
@@ -12,7 +15,6 @@ interface BaseEntry {
   title: string;
   startDt: Moment;
   duration: number;
-  session?: Session;
   // position information
   x: number;
   y: number;
@@ -23,16 +25,20 @@ interface BaseEntry {
 
 export interface ContribEntry extends BaseEntry {
   type: 'contrib';
+  sessionId?: number;
 }
 
 export interface BlockEntry extends BaseEntry {
   type: 'block';
-  session: Session;
+  sessionId: number;
   children: ChildEntry[];
 }
 
 export interface BreakEntry extends BaseEntry {
   type: 'break';
+  sessionId?: number;
+  textColor: string;
+  backgroundColor: string;
 }
 
 export interface ChildContribEntry extends ContribEntry {

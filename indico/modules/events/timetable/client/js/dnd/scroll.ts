@@ -1,13 +1,20 @@
 import {useEffect, useRef} from 'react';
 
-import {MousePosition} from './types';
+import {getScrollParent} from './modifiers';
+import {Draggable, MousePosition} from './types';
 
-const SCROLL_MARGIN_PERCENT = 0.1;
-const BASE_SPEED = 20;
+const SCROLL_MARGIN_PERCENT = 0.15;
+const BASE_SPEED = 30;
 
 type Timeout = ReturnType<typeof setInterval>;
 
-export function useScrollIntent({enabled}: {enabled: boolean}) {
+export function useScrollIntent({
+  state,
+  draggables,
+}: {
+  state: any;
+  draggables: Record<string, Draggable>;
+}) {
   const scrollSpeed = useRef<{x: number; y: number}>({x: 0, y: 0});
   const intervalRef = useRef<Timeout | null>(null);
 
@@ -22,18 +29,20 @@ export function useScrollIntent({enabled}: {enabled: boolean}) {
     }
 
     function handleMouseMove(event: MouseEvent) {
-      if (!enabled) {
+      if (state.current.state !== 'dragging' || state.current.activeDraggable === null) {
         cleanUp();
         return;
       }
+      const draggable = draggables[state.current.activeDraggable];
+      const scrollParent = getScrollParent(draggable.node.current);
 
-      scrollSpeed.current = getScrollSpeed({x: event.clientX, y: event.clientY});
+      scrollSpeed.current = getScrollSpeed({x: event.clientX, y: event.clientY}, scrollParent);
       if (scrollSpeed.current.x !== 0 || scrollSpeed.current.y !== 0) {
         if (intervalRef.current === null) {
           intervalRef.current = setInterval(() => {
-            console.log('tick');
+            // console.log('tick');
             if (scrollSpeed.current.x !== 0 || scrollSpeed.current.y !== 0) {
-              window.scrollBy(scrollSpeed.current.x, scrollSpeed.current.y);
+              scrollParent.scrollBy(scrollSpeed.current.x, scrollSpeed.current.y);
             }
           }, 50);
         }
@@ -47,25 +56,26 @@ export function useScrollIntent({enabled}: {enabled: boolean}) {
       window.removeEventListener('mousemove', handleMouseMove);
       clearInterval(id);
     };
-  }, [enabled]);
+  }, [state, draggables]);
 }
 
-function getScrollSpeed(mouse: MousePosition) {
-  const mouseYPercent = mouse.y / window.innerHeight;
-  const mouseXPercent = mouse.x / window.innerWidth;
+function getScrollSpeed(mouse: MousePosition, scrollParent: HTMLElement) {
+  const rect = scrollParent.getBoundingClientRect();
+  const mouseYPercent = (mouse.y - rect.top) / rect.height;
+  const mouseXPercent = (mouse.x - rect.left) / rect.width;
   let speedX = 0;
   let speedY = 0;
 
   if (mouseYPercent < SCROLL_MARGIN_PERCENT) {
-    speedY = -BASE_SPEED * Math.min(1 / mouseYPercent / 10, 5);
+    speedY = -BASE_SPEED * Math.min(1 / mouseYPercent / 10, 7);
   } else if (mouseYPercent > 1 - SCROLL_MARGIN_PERCENT) {
-    speedY = BASE_SPEED * Math.min(1 / (1 - mouseYPercent) / 10, 5);
+    speedY = BASE_SPEED * Math.min(1 / (1 - mouseYPercent) / 10, 7);
   }
 
   if (mouseXPercent < SCROLL_MARGIN_PERCENT) {
-    speedX = -BASE_SPEED * Math.min(1 / mouseXPercent / 10, 5);
+    speedX = -BASE_SPEED * Math.min(1 / mouseXPercent / 10, 7);
   } else if (mouseXPercent > 1 - SCROLL_MARGIN_PERCENT) {
-    speedX = BASE_SPEED * Math.min(1 / (1 - mouseXPercent) / 10, 5);
+    speedX = BASE_SPEED * Math.min(1 / (1 - mouseXPercent) / 10, 7);
   }
 
   return {x: speedX, y: speedY};

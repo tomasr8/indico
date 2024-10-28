@@ -1,6 +1,7 @@
+import _ from 'lodash';
 import moment from 'moment';
 
-import {ChildEntry, DayEntries} from './types';
+import {ChildEntry, DayEntries, Session} from './types';
 
 const entryTypeMapping = {
   s: 'block',
@@ -8,12 +9,25 @@ const entryTypeMapping = {
   b: 'break',
 };
 
+export function preprocessSessionData(data: Record<string, any>): Record<number, Session> {
+  return Object.fromEntries(
+    Object.entries(data).map(([, s]) => [
+      s.id,
+      {
+        ..._.pick(s, ['title', 'isPoster']), // TODO(Duarte) get other attrs
+        textColor: s.textColor,
+        backgroundColor: s.color,
+      },
+    ])
+  );
+}
+
 export function preprocessTimetableData(
   data: any,
   eventInfo: any
 ): {dayEntries: DayEntries; unscheduled: any[]} {
-  console.log(data);
-  console.log('einfo', eventInfo);
+  // console.log(data);
+  // console.log('einfo', eventInfo);
   const dayEntries = {};
   for (const day in data) {
     dayEntries[day] = [];
@@ -21,10 +35,6 @@ export function preprocessTimetableData(
       const id = parseInt(_id.slice(1), 10);
       const type = entryTypeMapping[_id[0]];
       const entry = data[day][_id];
-
-      // if(id !== 313) {
-      //   continue;
-      // }
 
       dayEntries[day].push({
         type,
@@ -40,7 +50,12 @@ export function preprocessTimetableData(
       });
 
       if (entry.sessionId) {
-        dayEntries[day].at(-1).session = {id: entry.sessionId};
+        dayEntries[day].at(-1).sessionId = entry.sessionId;
+      }
+
+      if (type === 'break') {
+        dayEntries[day].at(-1).backgroundColor = entry.color;
+        dayEntries[day].at(-1).textColor = entry.textColor;
       }
 
       if (type === 'block') {
@@ -62,7 +77,7 @@ export function preprocessTimetableData(
           };
 
           if (entry.sessionId) {
-            childEntry.session = {id: entry.sessionId};
+            childEntry.sessionId = entry.sessionId;
           }
 
           return childEntry;
@@ -85,7 +100,7 @@ export function preprocessTimetableData(
     column: 0,
     maxColumn: 0,
   }));
-  console.log('unscheduled', unscheduled);
-  console.log('entriesByDay', dayEntries);
+  // console.log('unscheduled', unscheduled);
+  // console.log('entriesByDay', dayEntries);
   return {dayEntries, unscheduled};
 }

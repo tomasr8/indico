@@ -33,20 +33,32 @@ function restrictToBoundingRect(transform: Transform, rect: Rect, boundingRect: 
  * @returns A new Transform object
  */
 export const createRestrictToElement = containerRef => ({draggingNodeRect, transform}) => {
-  return transform; // XXX: testing only, this function needs fixing
+  // return transform; // XXX: testing only, this function needs fixing
   if (!draggingNodeRect || !containerRef.current) {
     return transform;
   }
 
   let rect = containerRef.current.getBoundingClientRect();
+  // console.log('container', containerRef.current);
   // TODO: There can be multiple scroll parents, we should walk up the tree and add
   // the scroll offsets of all of them
-  const scrollParent = getScrollParent(containerRef.current);
+  // const scrollParent = getScrollParent(containerRef.current);
+  const scroll = getTotalScroll(containerRef.current);
+  // console.log('scrollParent', scrollParent.scrollTop);
+  // console.log('REAL TOP', rect.top + scrollParent.scrollTop);
   rect = {
-    top: rect.top + scrollParent.scrollTop,
-    left: rect.left + scrollParent.scrollLeft,
-    bottom: rect.bottom + scrollParent.scrollTop,
-    right: rect.right + scrollParent.scrollLeft,
+    // top: rect.top,
+    // left: rect.left,
+    // bottom: rect.bottom,
+    // right: rect.right,
+    // top: rect.top + scrollParent.scrollTop,
+    // left: rect.left + scrollParent.scrollLeft,
+    // bottom: rect.bottom + scrollParent.scrollTop,
+    // right: rect.right + scrollParent.scrollLeft,
+    top: rect.top + scroll.top,
+    left: rect.left + scroll.left,
+    bottom: rect.bottom + scroll.top,
+    right: rect.right + scroll.left,
     width: rect.width,
     height: rect.height,
   };
@@ -66,4 +78,18 @@ export function getScrollParent(element: HTMLElement): HTMLElement {
     }
   } while (parent);
   return document.body;
+}
+
+export function getTotalScroll(element: HTMLElement): {top: number; left: number} {
+  let top = 0;
+  let left = 0;
+  let parent: HTMLElement | undefined = element.parentElement;
+
+  while (parent) {
+    top += parent.scrollTop;
+    left += parent.scrollLeft;
+    parent = parent.parentElement;
+  }
+
+  return {top, left};
 }

@@ -32,7 +32,9 @@ export const EXPERIMENTAL_TOGGLE_POPUPS = 'Experimental toggle popups';
 interface ResizeEntryAction {
   type: typeof RESIZE_ENTRY;
   date: string;
-  entries: TopLevelEntry[];
+  id: number;
+  duration: number;
+  parentId?: number;
 }
 
 interface MoveEntryAction {
@@ -67,8 +69,13 @@ export function moveEntry(date: string, entries: TopLevelEntry[]): MoveEntryActi
   return {type: MOVE_ENTRY, date, entries};
 }
 
-export function resizeEntry(date: string, entries: TopLevelEntry[]): ResizeEntryAction {
-  return {type: RESIZE_ENTRY, date, entries};
+export function resizeEntry(
+  date: string,
+  id: number,
+  duration: number,
+  parentId?: number
+): ResizeEntryAction {
+  return {type: RESIZE_ENTRY, date, id, duration, parentId};
 }
 
 export function selectEntry(id?: number): SelectEntryAction {

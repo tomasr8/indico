@@ -208,7 +208,6 @@ BreakDetails.propTypes = detailsPropTypes;
 export default function EntryDetails({entry}: {entry: Entry}) {
   const dispatch = useDispatch();
   const {title, slotTitle, description, code, sessionCode, type} = entry;
-  console.log('details', entry);
   // TODO figure this out:
   const uses24HourFormat = true;
 

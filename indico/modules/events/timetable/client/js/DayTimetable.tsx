@@ -24,54 +24,75 @@ function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) 
   const dispatch = useDispatch();
   const selectedId = useSelector(selectors.getSelectedId);
 
-  const makeSetDuration = useCallback(
-    (id: number) => (duration: number) => {
-      console.log(id, duration);
-      const newEntries = layout(
-        entries.map(entry => {
-          if (entry.id === id) {
-            return {
-              ...entry,
-              duration,
-            };
-          }
-          return entry;
-        })
-      );
-      dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
-    },
-    [dispatch, entries, dt]
-  );
+  // const makeSetDuration = useCallback(
+  //   (id: number) => (duration: number) => {
+  //     dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), id, duration));
+  //   },
+  //   [dispatch, dt]
+  // );
 
-  const makeSetChildDuration = useCallback(
-    (parentId: number) => (childId: number, duration: number) => {
-      const newEntries = layout(
-        entries.map(entry => {
-          if (entry.type === 'block' && entry.id === parentId) {
-            return {
-              ...entry,
-              children: entry.children.map(child => {
-                if (child.id === childId) {
-                  return {
-                    ...child,
-                    duration: moment(entry.startDt)
-                      .add(duration, 'minutes')
-                      .isBefore(moment(child.startDt).add(entry.duration, 'minutes'))
-                      ? duration
-                      : entry.duration,
-                  };
-                }
-                return child;
-              }),
-            };
-          }
-          return entry;
-        })
-      );
-      dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
-    },
-    [dispatch, entries, dt]
-  );
+  // const makeSetDuration = useCallback(
+  //   (id: number) => (duration: number) => {
+  //     dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), id, duration));
+  //   },
+  //   [dispatch, dt]
+  // );
+
+  const setDurations = useMemo(() => {
+    const obj = {};
+    for (const e of entries) {
+      obj[e.id] = (duration: number) =>
+        dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), e.id, duration));
+    }
+    return obj;
+  }, [entries, dispatch, dt]);
+
+  const setChildDurations = useMemo(() => {
+    const obj = {};
+    for (const e of entries) {
+      obj[e.id] = (id: number) => (duration: number) =>
+        dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), id, duration, e.id));
+    }
+    return obj;
+  }, [entries, dispatch, dt]);
+
+  // const setDuration = useCallback(() => {}, []);
+  // const setChildDuration = useCallback(() => {}, []);
+
+  // const _entries = useMemo(() => {
+  //   console.log('ENTRIES CHANGED');
+  //   return entries;
+  // }, [entries]);
+
+  // const makeSetChildDuration = useCallback(
+  //   (parentId: number) => (childId: number, duration: number) => {
+  //     const newEntries = layout(
+  //       entries.map(entry => {
+  //         if (entry.type === 'block' && entry.id === parentId) {
+  //           return {
+  //             ...entry,
+  //             children: entry.children.map(child => {
+  //               if (child.id === childId) {
+  //                 return {
+  //                   ...child,
+  //                   duration: moment(entry.startDt)
+  //                     .add(duration, 'minutes')
+  //                     .isBefore(moment(child.startDt).add(entry.duration, 'minutes'))
+  //                     ? duration
+  //                     : entry.duration,
+  //                 };
+  //               }
+  //               return child;
+  //             }),
+  //           };
+  //         }
+  //         return entry;
+  //       })
+  //     );
+  //     dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
+  //   },
+  //   [dispatch, entries, dt]
+  // );
 
   return (
     <>
@@ -80,12 +101,14 @@ function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) 
           <DraggableBlockEntry
             key={entry.id}
             selected={selectedId === entry.id}
-            setDuration={makeSetDuration(entry.id)}
-            setChildDuration={makeSetChildDuration(entry.id)}
+            // setDuration={setDuration}
+            setDuration={setDurations[entry.id]}
+            setChildDuration={setChildDurations[entry.id]}
             {...entry}
           />
         ) : (
-          <DraggableEntry key={entry.id} setDuration={makeSetDuration(entry.id)} {...entry} />
+          <DraggableEntry key={entry.id} setDuration={setDurations[entry.id]} {...entry} />
+          // <DraggableEntry key={entry.id} setDuration={setDuration} {...entry} />
         )
       )}
     </>
@@ -100,13 +123,12 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
   const unscheduled = useSelector(selectors.getUnscheduled);
   const calendarRef = useRef<HTMLDivElement | null>(null);
 
-  entries = computeYoffset(entries, minHour);
+  entries = useMemo(() => computeYoffset(entries, minHour), [entries, minHour]);
 
   function handleDragEnd(who: string, over: Over[], delta: Transform, mouse: MousePosition) {
     if (over.length === 0) {
       return;
     }
-    console.log('handleDragEnd', who, over, delta, mouse);
 
     // if (who.startsWith('unscheduled-')) {
     //   handleUnscheduledDrop(who, over[0], delta, mouse);
@@ -182,14 +204,16 @@ export function DayTimetable({dt, minHour, maxHour, entries}: DayTimetableProps)
   return (
     <DnDProvider onDrop={handleDragEnd} modifier={restrictToCalendar}>
       <UnscheduledContributions />
-      <div styleName="wrapper">
-        <TimeGutter minHour={minHour} maxHour={maxHour} />
-        <DnDCalendar>
-          <div ref={calendarRef}>
-            <Lines minHour={minHour} maxHour={maxHour} />
-            <MemoizedTopLevelEntries dt={dt} entries={entries} />
-          </div>
-        </DnDCalendar>
+      <div className="wrapper">
+        <div styleName="wrapper">
+          <TimeGutter minHour={minHour} maxHour={maxHour} />
+          <DnDCalendar>
+            <div ref={calendarRef}>
+              <Lines minHour={minHour} maxHour={maxHour} />
+              <MemoizedTopLevelEntries dt={dt} entries={entries} />
+            </div>
+          </DnDCalendar>
+        </div>
       </div>
     </DnDProvider>
   );
@@ -283,7 +307,7 @@ function layoutAfterDropOnCalendar(
     }
   }
 
-  if (entry.type === 'contrib' && entry.session) {
+  if (entry.type === 'contrib' && entry.sessionId) {
     return; // contributions with sessions assigned cannot be scheduled at the top level
   }
 
@@ -362,21 +386,23 @@ function layoutAfterDropOnBlock(
     return;
   }
 
-  console.log(entry.type, entry.session, toBlock.session);
-
   if (entry.type === 'contrib') {
-    if (!entry.session) {
+    if (!entry.sessionId) {
       // Allow top level contributions being dropped on blocks to be treated as if they
       // were dropped directly on the calendar instead
       return layoutAfterDropOnCalendar(entries, who, calendar, delta, mouse);
     }
-    if (entry.session.id !== toBlock.session.id) {
+    if (entry.sessionId !== toBlock.sessionId) {
       return; // contributions cannot be moved to blocks of different sessions
     }
   } else if (entry.type === 'block') {
     // Allow blocks being dropped on other blocks to be treated as if they
     // were dropped directly on the calendar instead
     return layoutAfterDropOnCalendar(entries, who, calendar, delta, mouse);
+  }
+
+  if (entry.duration > toBlock.duration) {
+    return; // TODO: auto-resize the block?
   }
 
   entry = {
@@ -391,15 +417,15 @@ function layoutAfterDropOnBlock(
   };
 
   if (entry.startDt.isBefore(moment(toBlock.startDt))) {
-    return;
-  }
-
-  if (
+    // move start time to the start of the block
+    entry.startDt = moment(toBlock.startDt);
+  } else if (
     moment(entry.startDt)
       .add(entry.duration, 'minutes')
       .isAfter(moment(toBlock.startDt).add(toBlock.duration, 'minutes'))
   ) {
-    return;
+    // move end time to the end of the block
+    entry.startDt = moment(toBlock.startDt).add(toBlock.duration - entry.duration, 'minutes');
   }
 
   const groupIds = getGroup(entry, toBlock.children.filter(e => e.id !== entry.id));

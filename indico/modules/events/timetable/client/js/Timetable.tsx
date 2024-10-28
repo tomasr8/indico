@@ -6,7 +6,7 @@
 // LICENSE file for more details.
 
 import moment from 'moment';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {Checkbox} from 'semantic-ui-react';
 
@@ -18,6 +18,7 @@ import ContributionEntryForm from './forms/ContributionEntryForm';
 import {entryStyleGetter, layoutAlgorithm} from './layout-old';
 import * as selectors from './selectors';
 import Toolbar from './Toolbar';
+import WeekViewToolbar from './WeekViewToolbar';
 import UnscheduledContributions from './UnscheduledContributions';
 
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.scss';
@@ -34,12 +35,27 @@ export default function Timetable() {
   const dispatch = useDispatch();
   const displayMode = useSelector(selectors.getDisplayMode);
   const entries = useSelector(selectors.getDayEntries);
+  // console.log('<TT>')
+  // const _entries = useMemo(() => {
+  //   console.log('<TT> ENTRIES CHANGED');
+  //   return entries;
+  // }, [entries]);
+
   // const blocks = useSelector(selectors.getBlocks);
   const selectedId = useSelector(selectors.getSelectedId);
+  // console.log(selectedId);
+  // const selectedId = null;
+
   // const draggedContribs = useSelector(selectors.getDraggedContribs);
   const [date, setDate] = useState(moment(getEarliestDate(Object.keys(entries))));
   const [placeholderEntry, setPlaceholderEntry] = useState(null);
   const currentDateEntries = entries[date.format('YYYYMMDD')];
+
+  // const _curr = useMemo(() => {
+  //   console.log('<TT> CURRENT ENTRIES CHANGED');
+  //   return currentDateEntries;
+  // }, [currentDateEntries]);
+
   let selectedEntry = currentDateEntries.find(e => e.id === selectedId);
   if (!selectedEntry) {
     selectedEntry = currentDateEntries
@@ -81,8 +97,6 @@ export default function Timetable() {
         ) + 1
   );
 
-  console.log('minHour', minHour, 'maxHour', maxHour);
-
   useEffect(() => {
     function onKeydown(e: KeyboardEvent) {
       if (e.ctrlKey && e.key === 'z') {
@@ -97,7 +111,7 @@ export default function Timetable() {
   }, [dispatch]);
 
   return (
-    <div styleName={`timetable ${displayMode}`}>
+    <div styleName={`timetable`}>
       {/* <div style={{height: 50}}>
         <Checkbox
           toggle
@@ -106,16 +120,12 @@ export default function Timetable() {
           label="Experminetal: Use popups instead of sidebar"
         />
       </div> */}
-      <Toolbar date={date} onNavigate={d => setDate(d)} />
+      {useWeekView && <WeekViewToolbar date={date} onNavigate={d => setDate(d)} />}
+      {!useWeekView && <Toolbar date={date} onNavigate={d => setDate(d)} />}
       <div styleName="content">
         {useWeekView && <WeekTimetable minHour={0} maxHour={24} entries={entries} />}
         {!useWeekView && (
-          <DayTimetable
-            dt={date}
-            minHour={minHour}
-            maxHour={maxHour}
-            entries={currentDateEntries}
-          />
+          <DayTimetable dt={date} minHour={0} maxHour={24} entries={currentDateEntries} />
         )}
         {!popupsEnabled && selectedEntry && <EntryDetails entry={selectedEntry} />}
         <ContributionEntryForm />

@@ -28,21 +28,9 @@ import {
   UNREGISTER_DRAGGABLE,
 } from './actions';
 import {title} from 'process';
-import {preprocessTimetableData} from './preprocess';
+import {preprocessSessionData, preprocessTimetableData} from './preprocess';
 import {layout, layoutDays} from './layout';
 import {DayEntries, TopLevelEntry} from './types';
-
-const preprocessSessionData = data => {
-  return new Map(
-    Object.entries(data).map(([, s]) => [
-      s.id,
-      {
-        ..._.pick(s, ['title', 'isPoster']), // TODO get other attrs
-        color: {text: s.textColor, background: s.color},
-      },
-    ])
-  );
-};
 
 interface Change {
   change: any;
@@ -78,6 +66,7 @@ export default {
     },
     action: actions.Action
   ) => {
+    // console.log('redux action', action);
     switch (action.type) {
       case actions.SET_TIMETABLE_DATA: {
         const {dayEntries, unscheduled} = preprocessTimetableData(action.data, action.eventInfo);
@@ -105,11 +94,53 @@ export default {
         };
       }
       case actions.RESIZE_ENTRY: {
-        const date = action.date;
+        const {date, id, parentId, duration} = action;
+        let newDayEntries;
+        if (parentId !== undefined) {
+          const parent = state.changes[state.currentChangeIdx].entries[date].find(
+            e => e.id === parentId
+          );
+          if (!parent) {
+            return state;
+          }
+          newDayEntries = layout(
+            state.changes[state.currentChangeIdx].entries[date].map(entry => {
+              if (entry.type === 'block' && entry.id === parentId) {
+                return {
+                  ...entry,
+                  children: entry.children.map(child => {
+                    if (child.id === id) {
+                      return {
+                        ...child,
+                        duration: moment(entry.startDt)
+                          .add(duration, 'minutes')
+                          .isBefore(moment(child.startDt).add(entry.duration, 'minutes'))
+                          ? duration
+                          : entry.duration,
+                      };
+                    }
+                    return child;
+                  }),
+                };
+              }
+              return entry;
+            })
+          );
+        } else {
+          const entry = state.changes[state.currentChangeIdx].entries[date].find(e => e.id === id);
+          if (!entry) {
+            return state;
+          }
+          newDayEntries = layout(
+            state.changes[state.currentChangeIdx].entries[date].map(e =>
+              e.id === id ? {...e, duration} : e
+            )
+          );
+        }
         const newEntries = Object.fromEntries(
           Object.entries(state.changes[state.currentChangeIdx].entries).map(([day, dayEntries]) => [
             day,
-            day === date ? action.entries : dayEntries,
+            day === date ? newDayEntries : dayEntries,
           ])
         );
         return {
@@ -127,6 +158,7 @@ export default {
       }
       case actions.SELECT_ENTRY:
         return {...state, selectedId: action.id};
+      // return {...state};
       case actions.DELETE_ENTRY:
         return {
           ...state,
@@ -236,56 +268,4 @@ export default {
         return state;
     }
   },
-  dnd,
 };
-
-interface Droppable {
-  node: HTMLElement;
-}
-
-interface State {
-  droppables: Record<string, Droppable>;
-  draggables: Record<string, object>;
-  onDrop: (draggableId: string, droppableId: string) => void;
-}
-
-function dnd(
-  state: State = {
-    droppables: {},
-    draggables: {},
-    onDrop: (a, b) => {
-      console.log(`Dropped ${a} on ${b}`);
-    },
-  },
-  action: any
-) {
-  switch (action.type) {
-    case REGISTER_DROPPABLE:
-      return {
-        ...state,
-        droppables: {...state.droppables, [action.id]: {node: action.node}},
-      };
-    case UNREGISTER_DROPPABLE:
-      return {
-        ...state,
-        droppables: {...state.droppables, [action.id]: undefined},
-      };
-    case REGISTER_DRAGGABLE:
-      return {
-        ...state,
-        draggables: {...state.draggables, [action.id]: {}},
-      };
-    case UNREGISTER_DRAGGABLE:
-      return {
-        ...state,
-        draggables: {...state.draggables, [action.id]: undefined},
-      };
-    case actions.REGISTER_ON_DROP:
-      return {
-        ...state,
-        onDrop: action.onDrop,
-      };
-    default:
-      return state;
-  }
-}

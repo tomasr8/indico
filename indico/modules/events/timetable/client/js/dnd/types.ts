@@ -32,6 +32,9 @@ export interface Droppable {
 
 export interface Draggable {
   node: HTMLRef;
+}
+
+export interface DraggableData {
   rect?: Rect;
   transform?: {x: number; y: number};
 }

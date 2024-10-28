@@ -28,13 +28,17 @@ export function WeekTimetable({
   const unscheduled = useSelector(selectors.getUnscheduled);
   const calendarRef = useRef<HTMLDivElement | null>(null);
 
-  console.log('E>', entries);
-
-  entries = Object.fromEntries(
-    Object.entries(entries)
-      .slice(0, 5)
-      .map(([dt, entries]) => [dt, computeYoffset(entries, minHour)])
+  entries = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(entries)
+          .slice(0, 5)
+          .map(([dt, es]) => [dt, computeYoffset(es, minHour)])
+      ),
+    [entries, minHour]
   );
+
+  const setChildDuration = useCallback(() => {}, []);
 
   const makeSetDuration = useCallback(
     (dt: string, id: number) => (duration: number) => {
@@ -54,18 +58,39 @@ export function WeekTimetable({
     [dispatch, entries]
   );
 
+  const setDurations = useMemo(() => {
+    const obj = {};
+    for (const dt in entries) {
+      obj[dt] = {};
+      for (const e of entries[dt]) {
+        obj[dt][e.id] = (duration: number) => dispatch(actions.resizeEntry(dt, e.id, duration));
+      }
+    }
+    return obj;
+  }, [entries, dispatch]);
+
+  const setChildDurations = useMemo(() => {
+    const obj = {};
+    for (const dt in entries) {
+      obj[dt] = {};
+      for (const e of entries[dt]) {
+        obj[dt][e.id] = (id: number) => (duration: number) =>
+          dispatch(actions.resizeEntry(dt, id, duration, e.id));
+      }
+    }
+    return obj;
+  }, [entries, dispatch]);
+
   function handleDragEnd(who: string, over: Over[], delta: Transform, mouse: MousePosition) {
     if (over.length === 0) {
       return;
     }
-    console.log('handleDragEnd', who, over, delta, mouse);
     const days = Object.keys(entries);
 
     // Cannot drop on itself
     over = over.filter(o => o.id !== who);
 
     const day = over.find(o => days.includes(o.id));
-    console.log('day', day);
     if (!day) {
       return;
     }
@@ -75,7 +100,6 @@ export function WeekTimetable({
 
   function handleDropOnDay(who: UniqueId, over: Over, delta: Transform, mouse: MousePosition) {
     const [from, to] = layoutAfterDropOnDay(entries, who, over, delta, mouse) || [];
-    console.log('from-to', from, to);
     if (!from) {
       return;
     }
@@ -107,11 +131,12 @@ export function WeekTimetable({
           <DraggableBlockEntry
             key={entry.id}
             renderChildren={false}
-            setDuration={makeSetDuration(dt, entry.id)}
+            setDuration={setDurations[dt][entry.id]}
+            setChildDuration={setChildDurations[dt][entry.id]}
             {...entry}
           />
         ) : (
-          <DraggableEntry key={entry.id} {...entry} setDuration={makeSetDuration(dt, entry.id)} />
+          <DraggableEntry key={entry.id} {...entry} setDuration={setDurations[dt][entry.id]} />
         )
       )}
     </DnDDay>
