@@ -67,12 +67,12 @@ export default function BlockEntry({
     position: 'absolute',
     top: y,
     left: x,
-    width: column === maxColumn ? width : `calc(${width} - 6px)`,
+    width: `calc(${width} - 6px)`,
     height: minutesToPixels(duration - 2),
     textAlign: 'left',
     zIndex: isDragging || isResizing ? 90 : selected ? 80 : style.zIndex,
     filter: selected ? 'drop-shadow(0 0 2px #000)' : undefined,
-    // containerType: 'inline-size',
+    containerType: 'inline-size',
     backgroundColor: sessionData.backgroundColor,
     color: sessionData.textColor,
     overflow: 'hidden',
@@ -249,22 +249,12 @@ function LongTitle({
   }, [duration]);
 
   return (
-    <div
-      ref={ref}
-      styleName="title-wrapper long"
-      style={{
-        padding: '4px 8px',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
+    <div ref={ref} styleName="title-wrapper long">
       <div styleName="multiline-ellipsis" style={{lineClamp: lines, WebkitLineClamp: lines}}>
         {icon}
         <span styleName="title">{title}</span>
       </div>
-      <div>{timeRange}</div>
+      <div styleName="time">{timeRange}</div>
     </div>
   );
 }

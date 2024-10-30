@@ -1,14 +1,22 @@
-// button.entry.block {
-//   container-type: inline-size;
-// }
+@container (min-width: 500px) {
+  button .title-wrapper {
+    max-width: 30%;
+  }
+}
 
-// @container (min-width: 500px) {
-//   button .title-wrapper {
-//     max-width: 30%;
-//   }
-// }
-
-// .block
+@container (max-width: 60px) {
+  button .title-wrapper {
+    &.long {
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+    
+    .title,
+    .time {
+      display: none;
+    }
+  }
+}
 
 .simple .title-wrapper {
   max-width: unset;

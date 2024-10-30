@@ -64,7 +64,7 @@ export default function ContributionEntry({
     position: 'absolute',
     top: y,
     left: x,
-    width: column === maxColumn ? width : `calc(${width} - 6px)`,
+    width: `calc(${width} - 6px)`,
     height: minutesToPixels(Math.max(duration, minutesToPixels(5)) - 2),
     zIndex: isDragging || isResizing ? 90 : selected ? 80 : style.zIndex,
     cursor: isResizing ? undefined : isDragging ? 'grabbing' : 'grab',
