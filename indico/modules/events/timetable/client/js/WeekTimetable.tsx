@@ -146,10 +146,12 @@ export function WeekTimetable({
     <DnDProvider onDrop={handleDragEnd} modifier={restrictToCalendar}>
       <UnscheduledContributions />
       <div className="wrapper">
-        <div styleName="wrapper" ref={calendarRef}>
+        <div styleName="wrapper">
           <TimeGutter minHour={minHour} maxHour={maxHour} />
-          {/* <div ref={calendarRef}>{days}</div> */}
-          {days}
+          <div ref={calendarRef} style={{display: 'flex', width: '100%', marginTop: 10}}>
+            {days}
+          </div>
+          {/* {days} */}
         </div>
       </div>
     </DnDProvider>
@@ -162,7 +164,7 @@ function DnDDay({dt, children}: {dt: string; children: React.ReactNode}) {
   });
 
   return (
-    <div ref={setNodeRef} styleName="calendar day" style={{marginTop: 10}}>
+    <div ref={setNodeRef} styleName="calendar day">
       {children}
     </div>
   );
