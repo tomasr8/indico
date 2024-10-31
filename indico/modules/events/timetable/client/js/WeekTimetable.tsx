@@ -1,18 +1,17 @@
-import moment, {Moment} from 'moment';
-import React, {useCallback, useEffect, useMemo, useRef} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import moment from 'moment';
+import React, {useEffect, useMemo, useRef} from 'react';
+import {useDispatch} from 'react-redux';
 
 import './DayTimetable.module.scss';
 import * as actions from './actions';
+import {TimeGutter, Lines} from './DayTimetable';
 import {createRestrictToElement, Transform, Over, MousePosition, UniqueId} from './dnd';
 import {useDroppable, DnDProvider} from './dnd/dnd';
 import {DraggableBlockEntry, DraggableEntry} from './Entry';
 import {computeYoffset, getGroup, layout, layoutGroupAfterMove} from './layout';
-import * as selectors from './selectors';
-import {TopLevelEntry, BlockEntry} from './types';
+import {TopLevelEntry} from './types';
 import UnscheduledContributions from './UnscheduledContributions';
 import {minutesToPixels, pixelsToMinutes} from './utils';
-import {TimeGutter, Lines} from './DayTimetable';
 
 export function WeekTimetable({
   entries,
@@ -25,7 +24,6 @@ export function WeekTimetable({
 }) {
   const dispatch = useDispatch();
   const mouseEventRef = useRef<MouseEvent | null>(null);
-  const unscheduled = useSelector(selectors.getUnscheduled);
   const calendarRef = useRef<HTMLDivElement | null>(null);
 
   entries = useMemo(
@@ -36,26 +34,6 @@ export function WeekTimetable({
           .map(([dt, es]) => [dt, computeYoffset(es, minHour)])
       ),
     [entries, minHour]
-  );
-
-  const setChildDuration = useCallback(() => {}, []);
-
-  const makeSetDuration = useCallback(
-    (dt: string, id: number) => (duration: number) => {
-      const newEntries = layout(
-        entries[dt].map(entry => {
-          if (entry.id === id) {
-            return {
-              ...entry,
-              duration,
-            };
-          }
-          return entry;
-        })
-      );
-      dispatch(actions.resizeEntry(dt, newEntries));
-    },
-    [dispatch, entries]
   );
 
   const setDurations = useMemo(() => {

@@ -1,5 +1,5 @@
 import moment, {Moment} from 'moment';
-import React, {useCallback, useEffect, useMemo, useRef} from 'react';
+import React, {useEffect, useMemo, useRef} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 
 import './DayTimetable.module.scss';
@@ -24,20 +24,6 @@ function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) 
   const dispatch = useDispatch();
   const selectedId = useSelector(selectors.getSelectedId);
 
-  // const makeSetDuration = useCallback(
-  //   (id: number) => (duration: number) => {
-  //     dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), id, duration));
-  //   },
-  //   [dispatch, dt]
-  // );
-
-  // const makeSetDuration = useCallback(
-  //   (id: number) => (duration: number) => {
-  //     dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), id, duration));
-  //   },
-  //   [dispatch, dt]
-  // );
-
   const setDurations = useMemo(() => {
     const obj = {};
     for (const e of entries) {
@@ -56,43 +42,6 @@ function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) 
     return obj;
   }, [entries, dispatch, dt]);
 
-  // const setDuration = useCallback(() => {}, []);
-  // const setChildDuration = useCallback(() => {}, []);
-
-  // const _entries = useMemo(() => {
-  //   return entries;
-  // }, [entries]);
-
-  // const makeSetChildDuration = useCallback(
-  //   (parentId: number) => (childId: number, duration: number) => {
-  //     const newEntries = layout(
-  //       entries.map(entry => {
-  //         if (entry.type === 'block' && entry.id === parentId) {
-  //           return {
-  //             ...entry,
-  //             children: entry.children.map(child => {
-  //               if (child.id === childId) {
-  //                 return {
-  //                   ...child,
-  //                   duration: moment(entry.startDt)
-  //                     .add(duration, 'minutes')
-  //                     .isBefore(moment(child.startDt).add(entry.duration, 'minutes'))
-  //                     ? duration
-  //                     : entry.duration,
-  //                 };
-  //               }
-  //               return child;
-  //             }),
-  //           };
-  //         }
-  //         return entry;
-  //       })
-  //     );
-  //     dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), newEntries));
-  //   },
-  //   [dispatch, entries, dt]
-  // );
-
   return (
     <>
       {entries.map(entry =>
@@ -107,7 +56,6 @@ function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) 
           />
         ) : (
           <DraggableEntry key={entry.id} setDuration={setDurations[entry.id]} {...entry} />
-          // <DraggableEntry key={entry.id} setDuration={setDuration} {...entry} />
         )
       )}
     </>

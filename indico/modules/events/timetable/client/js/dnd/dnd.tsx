@@ -216,7 +216,7 @@ export function DnDProvider({
           return;
         }
 
-        const scrollParent = getScrollParent(draggable.node.current);
+        const scrollParent = getScrollParent(draggable.node.current); // TODO: this should be getTotalScroll()
 
         state.current = {
           state: 'mousedown',
@@ -237,9 +237,6 @@ export function DnDProvider({
     (e: MouseEvent) => {
       if (state.current.state === 'mousedown' || state.current.state === 'dragging') {
         if (state.current.state === 'mousedown') {
-          // const id = state.current.activeDraggable;
-          // Measure the initial bounding rect
-          // setDraggables(d => setBoundingRect(d, id));
           state.current.state = 'dragging';
         }
         setDraggableData(d =>
