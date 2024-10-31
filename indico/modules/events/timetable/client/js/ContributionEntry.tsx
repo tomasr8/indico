@@ -84,14 +84,22 @@ export default function ContributionEntry({
   }, [_duration]);
 
   useEffect(() => {
+    const elem = (blockRef || {}).current;
+
     // TODO: This is not the nicest solution..
-    if (blockRef && blockRef.current) {
+    if (elem) {
       if (isDragging) {
-        blockRef.current.style.zIndex = 1000;
+        elem.style.zIndex = 1000;
       } else {
-        blockRef.current.style.zIndex = '';
+        elem.style.zIndex = '';
       }
     }
+
+    return () => {
+      if (elem && !isDragging) {
+        elem.style.zIndex = '';
+      }
+    };
   }, [isDragging, blockRef]);
 
   return (
