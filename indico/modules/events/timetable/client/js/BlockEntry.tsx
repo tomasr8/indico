@@ -45,8 +45,7 @@ export default function BlockEntry({
   renderChildren = true,
 }: DraggableBlockEntryProps) {
   const dispatch = useDispatch();
-  // console.log('rereendering block', id);
-  // const selectedId = useSelector(selectors.getSelectedId);
+  const blockRef = useRef<HTMLButtonElement | null>(null);
   const mouseEventRef = useRef<MouseEvent | null>(null);
   const resizeStartRef = useRef(null);
   const [isResizing, setIsResizing] = useState(false);
@@ -59,9 +58,8 @@ export default function BlockEntry({
   let style: Record<string, string | number | undefined> = transform
     ? {
         transform: `translate3d(${transform.x}px, ${snapPixels(transform.y)}px, 0)`,
-        zIndex: 70,
       }
-    : {zIndex: 70};
+    : {};
   style = {
     ...style,
     position: 'absolute',
@@ -75,7 +73,7 @@ export default function BlockEntry({
     containerType: 'inline-size',
     backgroundColor: sessionData.backgroundColor,
     color: sessionData.textColor,
-    overflow: 'hidden',
+    // overflow: 'hidden',
   };
 
   useEffect(() => {
@@ -110,7 +108,6 @@ export default function BlockEntry({
     return endDt.isAfter(acc) ? endDt : acc;
   }, moment(startDt));
 
-  // console.log('listeners', listeners);
   const setChildDurations = useMemo(() => {
     const obj = {};
     for (const e of _children) {
@@ -120,7 +117,12 @@ export default function BlockEntry({
   }, [_children, setChildDuration]);
 
   return (
-    <button type="button" styleName={`entry block ${renderChildren ? '' : 'simple'}`} style={style}>
+    <button
+      type="button"
+      styleName={`entry block ${renderChildren ? '' : 'simple'}`}
+      style={style}
+      ref={blockRef}
+    >
       <div
         styleName="drag-handle"
         ref={setNodeRef}
@@ -150,6 +152,7 @@ export default function BlockEntry({
                 key={child.id}
                 selected={false}
                 setDuration={setChildDurations[child.id]}
+                blockRef={blockRef}
                 parentEndDt={moment(startDt)
                   .add(deltaMinutes + duration, 'minutes')
                   .format()}

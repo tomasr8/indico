@@ -33,19 +33,12 @@ function restrictToBoundingRect(transform: Transform, rect: Rect, boundingRect: 
  * @returns A new Transform object
  */
 export const createRestrictToElement = containerRef => ({draggingNodeRect, transform}) => {
-  // return transform; // XXX: testing only, this function needs fixing
   if (!draggingNodeRect || !containerRef.current) {
     return transform;
   }
 
   let rect = containerRef.current.getBoundingClientRect();
-  // console.log('container', containerRef.current);
-  // TODO: There can be multiple scroll parents, we should walk up the tree and add
-  // the scroll offsets of all of them
-  // const scrollParent = getScrollParent(containerRef.current);
   const scroll = getTotalScroll(containerRef.current);
-  // console.log('scrollParent', scrollParent.scrollTop);
-  // console.log('REAL TOP', rect.top + scrollParent.scrollTop);
   rect = {
     // top: rect.top,
     // left: rect.left,
@@ -72,7 +65,6 @@ export function getScrollParent(element: HTMLElement): HTMLElement {
     parent = parent.parentElement;
 
     const style = getComputedStyle(parent);
-    // console.log(parent, style.overflowY);
     if (overflowRegex.test(style.overflow + style.overflowY + style.overflowX)) {
       return parent;
     }

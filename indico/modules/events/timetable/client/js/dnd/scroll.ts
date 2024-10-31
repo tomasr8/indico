@@ -40,7 +40,6 @@ export function useScrollIntent({
       if (scrollSpeed.current.x !== 0 || scrollSpeed.current.y !== 0) {
         if (intervalRef.current === null) {
           intervalRef.current = setInterval(() => {
-            // console.log('tick');
             if (scrollSpeed.current.x !== 0 || scrollSpeed.current.y !== 0) {
               scrollParent.scrollBy(scrollSpeed.current.x, scrollSpeed.current.y);
             }

@@ -66,7 +66,6 @@ export default {
     },
     action: actions.Action
   ) => {
-    // console.log('redux action', action);
     switch (action.type) {
       case actions.SET_TIMETABLE_DATA: {
         const {dayEntries, unscheduled} = preprocessTimetableData(action.data, action.eventInfo);

@@ -27,6 +27,7 @@ export default function ContributionEntry({
   startDt,
   duration: _duration,
   title,
+  blockRef,
   sessionId,
   textColor,
   backgroundColor,
@@ -50,15 +51,10 @@ export default function ContributionEntry({
   const sessionData = useSelector(state => state.sessions[sessionId]);
   let style: Record<string, string | number | undefined> = transform
     ? {
-        transform: `translate3d(${transform.x}px, ${snapPixels(transform.y)}px, 0)`,
-        zIndex: 70,
+        transform: `translate3d(${transform.x}px, ${snapPixels(transform.y)}px, 10px)`,
+        // zIndex: 70,
       }
-    : {zIndex: 70};
-  // console.log(
-  //   'isDragging',
-  //   isDragging,
-  //   isDragging || isResizing ? 90 : selected ? 80 : style.zIndex
-  // );
+    : {};
   style = {
     ...style,
     position: 'absolute',
@@ -66,7 +62,7 @@ export default function ContributionEntry({
     left: x,
     width: `calc(${width} - 6px)`,
     height: minutesToPixels(Math.max(duration, minutesToPixels(5)) - 2),
-    zIndex: isDragging || isResizing ? 90 : selected ? 80 : style.zIndex,
+    zIndex: isDragging || isResizing ? 1000 : selected ? 80 : style.zIndex,
     cursor: isResizing ? undefined : isDragging ? 'grabbing' : 'grab',
     filter: selected ? 'drop-shadow(0 0 2px #000)' : undefined,
     backgroundColor: backgroundColor
@@ -86,6 +82,17 @@ export default function ContributionEntry({
   useEffect(() => {
     setDuration(_duration);
   }, [_duration]);
+
+  useEffect(() => {
+    // TODO: This is not the nicest solution..
+    if (blockRef && blockRef.current) {
+      if (isDragging) {
+        blockRef.current.style.zIndex = 1000;
+      } else {
+        blockRef.current.style.zIndex = '';
+      }
+    }
+  }, [isDragging, blockRef]);
 
   return (
     <button type="button" styleName={`entry ${type === 'break' ? 'break' : ''}`} style={style}>

@@ -72,7 +72,6 @@ export function layoutGroupAfterMove<T extends Entry>(
   const selectedColumn = Math.floor(newColumnCount * mousePosition);
 
   const rightToLeft = selectedColumn < newEntry.column;
-  // console.log("rightToLeft", rightToLeft);
   if (selectedColumn === 0) {
     group = group.map(entry => ({
       ...entry,

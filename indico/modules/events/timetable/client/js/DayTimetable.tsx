@@ -60,7 +60,6 @@ function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) 
   // const setChildDuration = useCallback(() => {}, []);
 
   // const _entries = useMemo(() => {
-  //   console.log('ENTRIES CHANGED');
   //   return entries;
   // }, [entries]);
 

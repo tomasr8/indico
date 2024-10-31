@@ -97,7 +97,6 @@ function setTransform(
   modifier: Modifier
 ) {
   const draggable = draggableData[id];
-  // console.log('rect?', draggable.rect);
   const transform = modifier({
     draggingNodeRect: draggable.rect,
     transform: {
@@ -172,7 +171,6 @@ export function DnDProvider({
   const [droppables, setDroppables] = useState<Droppables>({});
   const [draggables, setDraggables] = useState<Draggables>({});
   const [draggableData, setDraggableData] = useState<DraggableData>({});
-  // const [activeId, setActiveId] = useState<string | null>(null);
   const state = useRef<DnDState>({
     state: 'idle',
     initialMousePosition: {x: 0, y: 0},
@@ -180,9 +178,6 @@ export function DnDProvider({
     initialScrollPosition: {x: 0, y: 0},
     activeDraggable: null,
   });
-  // const activeDraggable = draggables[activeId];
-  // console.log('active draggable', activeDraggable, draggables);
-  // console.log('draggables', draggables);
 
   useScrollIntent({state, draggables});
 
@@ -215,11 +210,8 @@ export function DnDProvider({
 
   const onMouseDown = useCallback(
     (id, {x, y}) => {
-      // console.log('mousedown', id);
       if (state.current.state === 'idle') {
-        // console.log(activeDraggable, id);
         const draggable = draggables[id];
-        // console.log('mousedown', draggable, draggables);
         if (!draggable) {
           return;
         }
@@ -233,12 +225,9 @@ export function DnDProvider({
           initialScrollPosition: {x: scrollParent.scrollLeft, y: scrollParent.scrollTop},
           activeDraggable: id,
         };
-        // console.log('setting rect', d));
         setDraggableData(d => {
-          // console.log('setting rect', setBoundingRect(d, draggable.node, id));
           return setBoundingRect(d, draggable.node, id);
         });
-        // setActiveId(id);
       }
     },
     [draggables]
@@ -246,7 +235,6 @@ export function DnDProvider({
 
   const onMouseMove = useCallback(
     (e: MouseEvent) => {
-      // console.log('mousemove', state.current.state, activeId);
       if (state.current.state === 'mousedown' || state.current.state === 'dragging') {
         if (state.current.state === 'mousedown') {
           // const id = state.current.activeDraggable;
@@ -314,7 +302,6 @@ export function DnDProvider({
         return;
       }
 
-      // console.log('scrolling', target.scrollLeft, target.scrollTop);
       // const deltaX = window.scrollX - state.current.scrollPosition.x;
       // const deltaY = window.scrollY - state.current.scrollPosition.y;
       // get the container scroll position instead of the window scroll position
@@ -326,11 +313,9 @@ export function DnDProvider({
         x: state.current.scrollPosition.x + deltaX,
         y: state.current.scrollPosition.y + deltaY,
       };
-      // console.log('setting scroll', deltaX, deltaY);
       setDraggableData(d =>
         setTransformOnScroll(d, state.current.activeDraggable, {x: deltaX, y: deltaY}, modifier)
       );
-      // console.log('>>> trans', draggables[state.current.activeDraggable].transform);
     },
     [modifier, draggables]
   );

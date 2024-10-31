@@ -87,8 +87,6 @@ export function preprocessTimetableData(
     }
   }
 
-  // console.log('data', data);
-  // console.log('eventInfo', eventInfo);
   const unscheduled = (eventInfo.contributions || []).map(c => ({
     type: 'contrib',
     id: c.uniqueId,
@@ -100,7 +98,5 @@ export function preprocessTimetableData(
     column: 0,
     maxColumn: 0,
   }));
-  // console.log('unscheduled', unscheduled);
-  // console.log('entriesByDay', dayEntries);
   return {dayEntries, unscheduled};
 }

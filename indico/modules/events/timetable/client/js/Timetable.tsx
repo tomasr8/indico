@@ -35,26 +35,15 @@ export default function Timetable() {
   const dispatch = useDispatch();
   const displayMode = useSelector(selectors.getDisplayMode);
   const entries = useSelector(selectors.getDayEntries);
-  // console.log('<TT>')
-  // const _entries = useMemo(() => {
-  //   console.log('<TT> ENTRIES CHANGED');
-  //   return entries;
-  // }, [entries]);
 
   // const blocks = useSelector(selectors.getBlocks);
   const selectedId = useSelector(selectors.getSelectedId);
-  // console.log(selectedId);
   // const selectedId = null;
 
   // const draggedContribs = useSelector(selectors.getDraggedContribs);
   const [date, setDate] = useState(moment(getEarliestDate(Object.keys(entries))));
   const [placeholderEntry, setPlaceholderEntry] = useState(null);
   const currentDateEntries = entries[date.format('YYYYMMDD')];
-
-  // const _curr = useMemo(() => {
-  //   console.log('<TT> CURRENT ENTRIES CHANGED');
-  //   return currentDateEntries;
-  // }, [currentDateEntries]);
 
   let selectedEntry = currentDateEntries.find(e => e.id === selectedId);
   if (!selectedEntry) {
