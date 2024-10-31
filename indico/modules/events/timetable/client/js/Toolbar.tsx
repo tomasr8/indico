@@ -13,7 +13,6 @@ import {Dropdown, Icon, Label, Menu, Message} from 'semantic-ui-react';
 import {Translate} from 'indico/react/i18n';
 
 import * as actions from './actions';
-import ReviewChangesButton from './components/Changelog';
 import NewEntryDropdown from './components/NewEntryDropdown';
 import * as selectors from './selectors';
 import {getNumDays} from './util';

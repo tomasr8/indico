@@ -6,34 +6,30 @@
 // LICENSE file for more details.
 
 import moment from 'moment';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {Checkbox} from 'semantic-ui-react';
+// import {Checkbox} from 'semantic-ui-react';
 
 import * as actions from './actions';
 import {DayTimetable} from './DayTimetable';
-import Entry from './Entry';
 import EntryDetails from './EntryDetails';
 import ContributionEntryForm from './forms/ContributionEntryForm';
-import {entryStyleGetter, layoutAlgorithm} from './layout-old';
 import * as selectors from './selectors';
 import Toolbar from './Toolbar';
+import {getEarliestDate} from './utils';
+import {WeekTimetable} from './WeekTimetable';
 import WeekViewToolbar from './WeekViewToolbar';
-import UnscheduledContributions from './UnscheduledContributions';
 
 import 'react-big-calendar/lib/addons/dragAndDrop/styles.scss';
 
 import './timetable.scss';
 import './Timetable.module.scss';
-import {getEarliestDate} from './utils';
-import {WeekTimetable} from './WeekTimetable';
 
 // const localizer = momentLocalizer(moment);
 // const DnDCalendar = withDragAndDrop(Calendar);
 
 export default function Timetable() {
   const dispatch = useDispatch();
-  const displayMode = useSelector(selectors.getDisplayMode);
   const entries = useSelector(selectors.getDayEntries);
 
   // const blocks = useSelector(selectors.getBlocks);
@@ -53,7 +49,7 @@ export default function Timetable() {
   }
   const popupsEnabled = useSelector(selectors.getPopupsEnabled);
 
-  const useWeekView = true;
+  const useWeekView = false;
 
   const minHour = Math.max(
     0,

@@ -9,28 +9,17 @@ import _ from 'lodash';
 import moment from 'moment';
 
 import * as actions from './actions';
+import {layout, layoutDays} from './layout';
 import {
-  resizeEntry,
   deleteEntry,
   scheduleContribs,
-  preprocessEntries,
   resizeWindow,
-  moveEntry,
   changeSessionColor,
   changeBreakColor,
   dropUnscheduledContribs,
 } from './operations';
-import {
-  REGISTER_DROPPABLE,
-  UNREGISTER_DROPPABLE,
-  SET_DROPPABLE_DATA,
-  REGISTER_DRAGGABLE,
-  UNREGISTER_DRAGGABLE,
-} from './actions';
-import {title} from 'process';
 import {preprocessSessionData, preprocessTimetableData} from './preprocess';
-import {layout, layoutDays} from './layout';
-import {DayEntries, TopLevelEntry} from './types';
+import {DayEntries} from './types';
 
 interface Change {
   change: any;

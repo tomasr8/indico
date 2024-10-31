@@ -7,7 +7,7 @@
 
 import PropTypes from 'prop-types';
 import React from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {Accordion, Divider, Header, Icon} from 'semantic-ui-react';
 
 import {Translate} from 'indico/react/i18n';
@@ -17,11 +17,10 @@ import AttachmentsDisplay from './components/AttachmentsDisplay';
 import DetailsSegment from './components/DetailsSegment';
 import EntryColorPicker from './components/EntryColorPicker';
 import TimeDisplay from './components/TimeDisplay';
-import * as selectors from './selectors';
-import {entrySchema, entryTypes, formatTitle, handleUnimplemented, isChildOf} from './util';
+import {Entry} from './types';
+import {entrySchema, entryTypes, formatTitle, handleUnimplemented} from './util';
 
 import './EntryDetails.module.scss';
-import {Entry} from './types';
 
 const entryIcons = {
   session: 'calendar alternate outline', // XXX: users also looks nice
