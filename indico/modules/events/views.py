@@ -180,8 +180,22 @@ class WPSimpleEventDisplay(WPSimpleEventDisplayBase):
                 raise RuntimeError(f'Assets for plugin {plugin.name} have not been built')
         else:
             manifest = current_app.manifest
+
+        overriden_theme_settings = get_theme_global_settings(self.event, self.theme_id)
+        print(overriden_theme_settings)
+
+        def _get_css_url():
+            if 'theme_version' not in overriden_theme_settings:
+                st = self.theme['stylesheets'][0]
+            else:
+                tv = overriden_theme_settings['theme_version']
+                st = next((st for st in self.theme['stylesheets'] if st['name'].lower() == tv), None)
+                assert st is not None
+            name = f'themes_{self.theme_id}_{st['stylesheet'].removesuffix('.scss')}.css'
+            return name
+
         return {
-            'screen': (manifest[f'themes_{self.theme_file_name}.css'],),
+            'screen': (manifest[_get_css_url()],),
             'print': ((manifest[f'themes_{self.theme_file_name}.print.css'],)
                       if print_stylesheet else ())
         }

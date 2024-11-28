@@ -47,9 +47,14 @@ export function getThemeEntryPoints(config, prefix) {
       const returnValue = {};
       const escapedKey = k.replace('-', '_');
 
-      returnValue[`themes_${escapedKey}`] = [
-        _resolveTheme(rootPath, indicoClientPath, prefix + themes[k].stylesheet),
-      ];
+      for (const {stylesheet} of themes[k].stylesheets) {
+        const p = stylesheet.split('.scss')[0];
+        const stylesheetKey = `themes_${escapedKey}_${p.toLowerCase()}`;
+        console.log('Theme', stylesheetKey);
+        returnValue[stylesheetKey] = [
+          _resolveTheme(rootPath, indicoClientPath, prefix + stylesheet),
+        ];
+      }
 
       if (themes[k].print_stylesheet) {
         returnValue[`themes_${escapedKey}.print`] = [

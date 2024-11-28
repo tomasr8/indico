@@ -37,6 +37,7 @@ from indico.web.flask.util import send_file, url_for
 from indico.web.forms import fields as indico_fields
 from indico.web.forms.base import FormDefaults, IndicoForm
 from indico.web.util import _pop_injected_js, jsonify_data
+from wtforms.fields import SelectField
 
 
 class RHLayoutBase(RHManageEventBase):
@@ -57,6 +58,10 @@ def _make_theme_settings_form(event, theme):
     except KeyError:
         return None
     form_class = type('ThemeSettingsForm', (IndicoForm,), {})
+    sheets = theme_settings.themes[theme]['stylesheets']
+    if len(sheets) > 1:
+        form_class.theme_version = SelectField(_('Theme version'), [DataRequired()],
+                                               choices=[(s['name'].lower(), s['name']) for s in sheets])
     for name, field_data in theme_user_settings.items():
         field_type = field_data['type']
         field_class = getattr(indico_fields, field_type, None) or getattr(wtforms_fields, field_type, None)

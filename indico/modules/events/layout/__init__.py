@@ -30,7 +30,8 @@ EVENT_LOGO_WIDTH = 200
 # to True as well.
 OVERRIDABLE_THEME_SETTINGS = {
     'inline_minutes': {'show_notes'},
-    'numbered_contributions': {'hide_duration', 'hide_session_block_time', 'hide_end_time', 'number_contributions'}
+    'numbered_contributions': {'hide_duration', 'hide_session_block_time', 'hide_end_time', 'number_contributions'},
+    'theme_version': {'theme_version'},
 }
 
 logger = Logger.get('events.layout')

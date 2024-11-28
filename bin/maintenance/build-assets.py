@@ -42,6 +42,19 @@ def step(message, *args):
 def _get_webpack_build_config(url_root='/'):
     themes = yaml.safe_load(Path('indico/modules/events/themes.yaml').read_text())
     root_path = os.path.abspath('indico')
+
+    def _get_theme(theme):
+        res = {}
+        if 'print_stylesheet' in theme:
+            res['print_stylesheet'] = theme['print_stylesheet']
+        if 'stylesheets' in theme:
+            res['stylesheets'] = []
+            for sheet in theme['stylesheets']:
+                res['stylesheets'].append({'name': sheet['name'], 'stylesheet': sheet['stylesheet']})
+        elif 'stylesheet' in theme:
+            res['stylesheets'] = [{'name': '', 'stylesheet': theme['stylesheet']}]
+        return res
+
     return {
         'build': {
             'baseURLPath': url_root,
@@ -53,9 +66,9 @@ def _get_webpack_build_config(url_root='/'):
             'distPath': os.path.join(root_path, 'web', 'static', 'dist'),
             'distURL': os.path.join(url_root, 'dist/')
         },
-        'themes': {key: {'stylesheet': theme['stylesheet'], 'print_stylesheet': theme.get('print_stylesheet')}
+        'themes': {key: _get_theme(theme)
                    for key, theme in themes['definitions'].items()
-                   if set(theme) & {'stylesheet', 'print_stylesheet'}}
+                   if set(theme) & {'stylesheets', 'stylesheet', 'print_stylesheet'}}
     }
 
 
@@ -80,15 +93,28 @@ def _get_plugin_build_deps(plugin_dir):
 
 
 def _parse_plugin_theme_yaml(plugin_yaml):
+    def _get_theme(theme):
+        res = {}
+        if 'print_stylesheet' in theme:
+            res['print_stylesheet'] = theme['print_stylesheet']
+        if 'stylesheets' in theme:
+            res['stylesheets'] = []
+            for sheet in theme['stylesheets']:
+                print(sheet)
+                res['stylesheets'].append({'name': sheet['name'], 'stylesheet': sheet['stylesheet']})
+        elif 'stylesheet' in theme:
+            res['stylesheets'] = [{'name': '', 'stylesheet': theme['stylesheet']}]
+        return res
+
     # This is very similar to what ThemeSettingsProxy does
     core_data = Path('indico/modules/events/themes.yaml').read_text()
     core_data = re.sub(r'^(\S+:)$', r'__core_\1', core_data, flags=re.MULTILINE)
     settings = {k: v
                 for k, v in yaml.safe_load(core_data + '\n' + plugin_yaml).items()
                 if not k.startswith('__core_')}
-    return {name: {'stylesheet': theme['stylesheet'], 'print_stylesheet': theme.get('print_stylesheet')}
+    return {name: _get_theme(theme)
             for name, theme in settings.get('definitions', {}).items()
-            if set(theme) & {'stylesheet', 'print_stylesheet'}}
+            if set(theme) & {'stylesheets', 'stylesheet', 'print_stylesheet'}}
 
 
 def _get_plugin_themes(plugin_dir):
@@ -167,6 +193,7 @@ def build_indico(dev, clean, watch, url_root):
     clean = clean or (clean is None and not dev)
     webpack_build_config_file = 'webpack-build-config.json'
     webpack_build_config = _get_webpack_build_config(url_root)
+    print(webpack_build_config)
     with open(webpack_build_config_file, 'w') as f:
         json.dump(webpack_build_config, f, indent=2, sort_keys=True)
     if clean:
