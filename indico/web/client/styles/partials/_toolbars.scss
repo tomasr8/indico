@@ -20,6 +20,9 @@ $toolbar-spacing: 10px;
   @include toolbar-group-slider();
   @extend .flexrow;
 
+  overflow: hidden;
+  border-radius: $default-border-radius;
+
   & ~ .i-button,
   & ~ .group {
     margin-left: buttons.$i-button-spacing;
@@ -27,7 +30,6 @@ $toolbar-spacing: 10px;
 
   .i-button {
     border-radius: 0;
-    border-right-width: 0;
     margin: 0;
 
     // i-button flavors don't change border color on hover
@@ -37,50 +39,54 @@ $toolbar-spacing: 10px;
       }
     }
 
-    &.arrow:last-of-type {
-      border-bottom-right-radius: $default-border-radius;
-      border-top-right-radius: $default-border-radius;
-    }
   }
 
-  & > .i-button:not(.hidden) {
-    &:first-child {
-      border-bottom-left-radius: $default-border-radius;
-      border-top-left-radius: $default-border-radius;
-    }
+  & > :not(.hidden):not(:first-child) {
+    margin-left: -1px;
+  }
 
-    &:last-child {
-      border-bottom-right-radius: $default-border-radius;
-      border-top-right-radius: $default-border-radius;
-      border-right-width: 1px;
-    }
+  & > :not(.hidden):hover {
+    z-index: 1;
+  }
+
+  & > .i-button:not(.hidden), & > div > .i-button:not(.hidden) {
+    // &:first-child {
+    //   border-bottom-left-radius: $default-border-radius;
+    //   border-top-left-radius: $default-border-radius;
+    // }
+
+    // &:last-child, &.highlight:first-child {
+    //   border-bottom-right-radius: $default-border-radius;
+    //   border-top-right-radius: $default-border-radius;
+    //   border-right-width: 1px;
+    // }
 
     &.label {
       &:not(:last-child) {
-        border-bottom-right-radius: 0;
-        border-top-right-radius: 0;
+        // border-bottom-right-radius: 0;
+        // border-top-right-radius: 0;
         border-right: none !important;
       }
 
-      & ~ .i-button:not(.hidden):first-child {
-        border-bottom-left-radius: 0;
-        border-top-left-radius: 0;
-      }
+      // & ~ .i-button:not(.hidden):first-child {
+      //   border-bottom-left-radius: 0;
+      //   border-top-left-radius: 0;
+      // }
     }
   }
 
-  .i-button-wrapper:not(.hidden) {
-    &:first-child .i-button {
-      border-bottom-left-radius: $default-border-radius;
-      border-top-left-radius: $default-border-radius;
-    }
+  // .i-button-wrapper:not(.hidden) {
+  //   &:first-child .i-button {
+  //     border-bottom-left-radius: $default-border-radius;
+  //     border-top-left-radius: $default-border-radius;
+  //   }
 
-    &:last-child .i-button {
-      border-bottom-right-radius: $default-border-radius;
-      border-top-right-radius: $default-border-radius;
-      border-right-width: 1px;
-    }
-  }
+  //   &:last-child .i-button {
+  //     border-bottom-right-radius: $default-border-radius;
+  //     border-top-right-radius: $default-border-radius;
+  //     border-right-width: 1px;
+  //   }
+  // }
 }
 
 @mixin toolbar-group-inputs {
