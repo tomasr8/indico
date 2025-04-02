@@ -72,6 +72,8 @@ export function preprocessTimetableEntries(
       const type = entryTypeMapping[_id[0]];
       const entry = data[day][_id];
 
+      console.log(type, entry);
+
       dayEntries[day].push({
         type,
         id,
