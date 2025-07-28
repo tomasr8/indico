@@ -37,7 +37,9 @@ registration_settings = RegistrationSettingsProxy('registrations', {
     # Order of the forms to show on the participant list
     'participant_list_forms': [],
     # Columns to show for each form on the participant list
-    'participant_list_form_columns': {}
+    'participant_list_form_columns': {},
+    # Settings for waitlist
+    'waitlist_settings': {}
 })
 
 

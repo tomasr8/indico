@@ -20,6 +20,7 @@ import {domReady} from 'indico/utils/domstate';
 import ConsentToPublishEditor from './components/ConsentToPublishEditor';
 import ParticipantList from './components/participant-list/ParticipantList';
 import RegistrationTagsEditableList from './components/RegistrationTagsEditableList';
+import WaitlistConfig from './components/waitlist/WaitlistConfig';
 import setupRegformSetup from './form_setup';
 import setupRegformSubmission from './form_submission';
 
@@ -166,6 +167,30 @@ import setupRegformSubmission from './form_submission';
               merged={this.getAttribute('merged') !== null}
               eventId={Number(this.getAttribute('event-id'))}
             />,
+            this
+          );
+        });
+      }
+
+      disconnectedCallback() {
+        ReactDOM.unmountComponentAtNode(this);
+      }
+    }
+  );
+
+  customElements.define(
+    'ind-regform-waitlist-config',
+    class extends HTMLElement {
+      connectedCallback() {
+        domReady.then(() => {
+          ReactDOM.render(
+            <WaitlistConfig
+              eventId={this.getAttribute('event-id')}
+              regformId={this.getAttribute('regform-id')}
+              url={this.getAttribute('url')}
+            >
+              Hello!
+            </WaitlistConfig>,
             this
           );
         });

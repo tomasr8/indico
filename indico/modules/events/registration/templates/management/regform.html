@@ -190,6 +190,28 @@
                 </div>
             </div>
         {% endblock %}
+
+        {% block waitlist_section %}
+            <div class="section">
+                <div class="icon icon-mail"></div>
+                <div class="text">
+                    <div class="label">
+                        {% trans %}Waitlist{% endtrans %}
+                    </div>
+                    {% trans %}Manage the waitlist for your event.{% endtrans %}
+                </div>
+                <div class="toolbar" id="waitlist-button-wrapper">
+                    <ind-regform-waitlist-config
+                        event-id="{{ event.id }}"
+                        regform-id="{{ regform.id }}"
+                        url="{{ url_for('.registrations_manage_waitlist', regform) }}">
+                    </ind-regform-waitlist-config>
+                    <a href="{{ url_for('.registrations_manage_waitlist', regform) }}" class="i-button icon-settings">
+                        {% trans %}Manage{% endtrans %}
+                    </a>
+                </div>
+            </div>
+        {% endblock %}
     </div>
     {{ template_hook('extra-regform-settings', regform=regform) }}
     <div class="toolbar right">

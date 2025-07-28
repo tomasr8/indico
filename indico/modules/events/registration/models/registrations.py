@@ -257,6 +257,11 @@ class Registration(db.Model):
         UTCDateTime,
         nullable=True
     )
+    # is_waitlisted = db.Column(
+    #     db.Boolean,
+    #     nullable=False,
+    #     default=False
+    # )
 
     #: The Event containing this registration
     event = db.relationship(

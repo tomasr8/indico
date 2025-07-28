@@ -11,7 +11,7 @@ from indico.modules.events.registration.controllers.api import checkin_legacy as
 from indico.modules.events.registration.controllers.api import misc as api_misc
 from indico.modules.events.registration.controllers.compat import compat_registration
 from indico.modules.events.registration.controllers.management import (fields, invitations, privacy, regforms, reglists,
-                                                                       sections, tags, tickets)
+                                                                       sections, tags, tickets, waitlist)
 from indico.web.flask.util import make_compat_redirect_func
 from indico.web.flask.wrappers import IndicoBlueprint
 
@@ -141,6 +141,10 @@ _bp.add_url_rule('/manage/registration/<int:reg_form_id>/tickets/config', 'regis
                  reglists.RHRegistrationsConfigTickets, methods=('POST',))
 _bp.add_url_rule('/manage/registration/<int:reg_form_id>/badges/print/<int:template_id>/<uuid>',
                  'registrations_print_badges', reglists.RHRegistrationsPrintBadges)
+
+# Waitlist management
+_bp.add_url_rule('/manage/registration/<int:reg_form_id>/waitlist/config', 'registrations_manage_waitlist',
+                 waitlist.RHManageWaitlist, methods=('GET', 'POST'))
 
 # Invitation management
 _bp.add_url_rule('/manage/registration/<int:reg_form_id>/invitations/', 'invitations',

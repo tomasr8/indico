@@ -1139,3 +1139,11 @@ def load_registration_schema(regform, schema_cls, *, registration=None, partial_
     #      so we can use `exclude` here even with `unknown=RAISE` on the schema.
     schema = schema_cls(partial=partial_fields, exclude={f.html_field_name for f in hidden_fields})
     return parser.parse(schema)
+
+
+def withdraw_registration(registration):
+    """Withdraw a registration."""
+    registration.update_state(withdrawn=True)
+    # pretend waitlist is enabled
+    if True:
+        pass
