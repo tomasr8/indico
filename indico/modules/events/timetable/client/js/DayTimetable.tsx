@@ -40,24 +40,25 @@ interface DayTimetableProps {
 
 function TopLevelEntries({dt, entries}: {dt: Moment; entries: TopLevelEntry[]}) {
   const dispatch = useDispatch();
+  const eventId = useSelector(selectors.getEventId);
 
   const setDurations = useMemo(() => {
     const obj = {};
     for (const e of entries) {
       obj[e.id] = (duration: number) =>
-        dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), e.id, duration));
+        dispatch(actions.resizeEntry(e, eventId, dt.format('YYYYMMDD'), e.id, duration));
     }
     return obj;
-  }, [entries, dispatch, dt]);
+  }, [entries, dispatch, dt, eventId]);
 
   const setChildDurations = useMemo(() => {
     const obj = {};
     for (const e of entries) {
-      obj[e.id] = (id: string) => (duration: number) =>
-        dispatch(actions.resizeEntry(dt.format('YYYYMMDD'), id, duration, e.id));
+      obj[e.id] = (_e: Entry) => (duration: number) =>
+        dispatch(actions.resizeEntry(_e, eventId, dt.format('YYYYMMDD'), _e.id, duration, e.id));
     }
     return obj;
-  }, [entries, dispatch, dt]);
+  }, [entries, dispatch, dt, eventId]);
 
   return (
     <>

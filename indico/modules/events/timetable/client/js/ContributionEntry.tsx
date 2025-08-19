@@ -144,7 +144,7 @@ export default function ContributionEntry({
   const setChildDurations = useMemo(() => {
     const obj = {};
     for (const e of _children) {
-      obj[e.id] = setChildDuration(e.id);
+      obj[e.id] = setChildDuration(e);
     }
     return obj;
   }, [_children, setChildDuration]);

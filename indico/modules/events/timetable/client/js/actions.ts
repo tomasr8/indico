@@ -13,7 +13,6 @@ import sessionBlockURL from 'indico-url:timetable.tt_session_block_rest';
 import moment from 'moment';
 
 import {indicoAxios} from 'indico/utils/axios';
-import {snakifyKeys} from 'indico/utils/case';
 import {ajaxAction} from 'indico/utils/redux';
 
 import {
@@ -24,6 +23,7 @@ import {
   ContribEntry,
   ChildContribEntry,
   UnscheduledContrib,
+  Entry,
   EntryType,
 } from './types';
 
@@ -172,12 +172,35 @@ export function moveEntry(entry, eventId, entries: TopLevelEntry[], date: string
 }
 
 export function resizeEntry(
+  entry: Entry,
+  eventId: number,
   date: string,
   id: string,
   duration: number,
   parentId?: string
-): ResizeEntryAction {
-  return {type: RESIZE_ENTRY, date, id, duration, parentId};
+) {
+  let entryURL: string;
+
+  switch (entry.type) {
+    case EntryType.Break:
+      entryURL = breakURL({event_id: eventId, break_id: entry.objId});
+      break;
+    case EntryType.SessionBlock:
+      entryURL = sessionBlockURL({event_id: eventId, session_block_id: entry.objId});
+      break;
+    default:
+      entryURL = contributionURL({event_id: eventId, contrib_id: entry.objId});
+  }
+
+  const entryData = {duration: duration * 60};
+
+  return ajaxAction(() => indicoAxios.patch(entryURL, entryData), null, () => ({
+    type: RESIZE_ENTRY,
+    date,
+    id,
+    duration,
+    parentId,
+  }));
 }
 
 export function selectEntry(id: string): SelectEntryAction {
