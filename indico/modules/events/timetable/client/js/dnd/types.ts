@@ -39,12 +39,13 @@ export interface Droppable {
 
 export interface Draggable {
   node: HTMLRef;
-  fixed: boolean;
 }
 
 export interface DraggableData {
+  fixed: boolean;
   rect?: Rect;
-  transform?: {x: number; y: number};
+  transform?: Transform;
+  visualTransform?: Transform;
   mouse?: MousePosition;
   initialOffset?: Coords;
 }

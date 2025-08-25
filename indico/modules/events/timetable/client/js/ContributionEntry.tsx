@@ -45,6 +45,7 @@ export default function ContributionEntry({
   listeners,
   setNodeRef,
   transform,
+  visualTransform,
   isDragging,
   column,
   maxColumn,
@@ -56,6 +57,7 @@ export default function ContributionEntry({
   children: _children = [],
   setChildDuration = () => {},
   renderChildren = true,
+  style: _style,
 }: DraggableEntryProps) {
   const {width, offset} = getWidthAndOffset(column, maxColumn);
   const resizeStartRef = useRef<number | null>(null);
@@ -66,9 +68,10 @@ export default function ContributionEntry({
     id: `${id}`,
     // disabled: true,
   });
-  let style: Record<string, string | number | undefined> = transform
+  // console.log(transform, visualTransform);
+  let style: Record<string, string | number | undefined> = visualTransform
     ? {
-        transform: `translate3d(${transform.x}px, ${snapPixels(transform.y)}px, 10px)`,
+        transform: `translate3d(${visualTransform.x}px, ${snapPixels(visualTransform.y)}px, 10px)`,
         // zIndex: 70,
       }
     : {};
@@ -94,6 +97,8 @@ export default function ContributionEntry({
         : sessionData.backgroundColor
       : '#5b1aff',
     color: textColor ? textColor : sessionData ? sessionData.textColor : undefined,
+    ..._style,
+    pointerEvents: isDragging ? 'none' : undefined,
   };
 
   const deltaMinutes = snapMinutes(pixelsToMinutes(transform ? transform.y : 0));
@@ -108,6 +113,15 @@ export default function ContributionEntry({
       .add(deltaMinutes, 'minutes')
       .format(),
   }));
+
+  useEffect(() => {
+    if (isDragging) {
+      document.body.style.cursor = 'grabbing';
+    }
+    return () => {
+      document.body.style.cursor = 'default';
+    };
+  }, [isDragging]);
 
   // const makeSetDuration = (id: number) => (d: number) => setChildDuration(id, d);
   // const setChildDuration = useCallback(() => {}, [])

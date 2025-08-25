@@ -10,6 +10,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {useSelector} from 'react-redux';
 import {Button} from 'semantic-ui-react';
 
+import {useDroppable} from './dnd';
 import * as selectors from './selectors';
 import './UnscheduledContributions.module.scss';
 import {DraggableUnscheduledContributionEntry} from './UnscheduledContributionEntry';
@@ -32,7 +33,14 @@ function UnscheduledContributionList({dt, contribs}: {dt: Moment; contribs: any[
   );
 }
 
-export default function UnscheduledContributions({dt}: {dt: Moment}) {
+export default function DnDUnscheduledContributions({dt}: {dt: Moment}) {
+  return <UnscheduledContributions dt={dt} />;
+}
+
+function UnscheduledContributions({dt}: {dt: Moment}) {
+  const {setNodeRef} = useDroppable({
+    id: 'unscheduled',
+  });
   const contribs = useSelector(selectors.getUnscheduled);
   const sessions = useSelector(selectors.getSessions);
   const showUnscheduled = useSelector(selectors.showUnscheduled);
@@ -89,6 +97,7 @@ export default function UnscheduledContributions({dt}: {dt: Moment}) {
         ref={wrapperRef}
       >
         <div
+          ref={setNodeRef}
           styleName="content"
           style={{overflowX: 'auto', maxHeight: '100%', padding: '1em 1em 5em 0'}}
         >

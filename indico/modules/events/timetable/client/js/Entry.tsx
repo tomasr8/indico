@@ -16,6 +16,7 @@ import {ReduxState} from './reducers';
 import * as selectors from './selectors';
 
 import './DayTimetable.module.scss';
+import {createPortal} from 'react-dom';
 
 interface DraggableEntryProps {
   id: number;
@@ -25,8 +26,21 @@ interface DraggableEntryProps {
 
 export function DraggableEntry({id, isChild = false, ...rest}: DraggableEntryProps) {
   const dispatch = useDispatch();
-  const {listeners: _listeners, setNodeRef, transform, isDragging} = useDraggable({
+  const {
+    listeners: _listeners,
+    setNodeRef,
+    transform,
+    visualTransform,
+    isDragging,
+
+    rect,
+    initialScroll,
+    mouse,
+    offset,
+    ref,
+  } = useDraggable({
     id: `${id}`,
+    fixed: true,
   });
   const isSelected = useSelector((state: ReduxState) =>
     selectors.makeIsSelectedSelector()(state, id)
@@ -66,6 +80,15 @@ export function DraggableEntry({id, isChild = false, ...rest}: DraggableEntryPro
     }
   }, [dispatch, isDragging]);
 
+  const style = transform
+    ? {
+        top: rect.top - initialScroll.top,
+        left: rect.left - initialScroll.left,
+        width: rect.width,
+        height: rect.height,
+      }
+    : {};
+
   const entry = (
     <ContributionEntry
       id={id}
@@ -74,9 +97,16 @@ export function DraggableEntry({id, isChild = false, ...rest}: DraggableEntryPro
       listeners={listeners}
       setNodeRef={setNodeRef}
       transform={transform}
+      visualTransform={visualTransform}
       isDragging={isDragging}
+      style={style}
     />
   );
+
+  if (transform) {
+    const portal = createPortal(entry, document.body);
+    return portal;
+  }
 
   if (isSelected && !isDragging) {
     return (

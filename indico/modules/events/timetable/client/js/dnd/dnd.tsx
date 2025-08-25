@@ -23,6 +23,7 @@ import {
   HTMLRef,
 } from './types';
 import {pointerInside} from './utils';
+import {pixelsToMinutes} from 'indico/modules/events/timetable/client/js/utils';
 
 type Droppables = Record<string, Droppable>;
 type Draggables = Record<string, Draggable>;
@@ -30,10 +31,9 @@ type DraggableData = Record<string, _DraggableData>;
 
 interface DnDState {
   state: DragState;
-  initialMousePosition: MousePosition;
+  mousePosition: MousePosition;
   scrollPosition: MousePosition;
-  initialScrollPosition: MousePosition;
-  initialOffset: MousePosition;
+  rawTransform: Transform;
   activeDraggable?: string;
 }
 
@@ -112,24 +112,24 @@ function resetDraggableState(draggableData: DraggableData, id: string) {
 function setTransform(
   draggableData: DraggableData,
   id: string,
-  initialMousePosition: MousePosition,
-  currentMousePosition: MousePosition,
+  rawTransform: Transform,
   modifier: Modifier
 ) {
+  // console.log('raw', rawTransform);
   const draggable = draggableData[id];
+  // const oldTransform = draggable.transform || {x: 0, y: 0};
   const transform = modifier({
     draggingNodeRect: draggable.rect,
-    transform: {
-      x: currentMousePosition.x - initialMousePosition.x,
-      y: currentMousePosition.y - initialMousePosition.y,
-    },
+    transform: {...rawTransform},
     id,
   });
+  console.log('transform', transform);
   return {
     ...draggableData,
     [id]: {
       ...draggable,
       transform,
+      visualTransform: {...transform},
     },
   };
 }
@@ -159,15 +159,15 @@ function setInitialOffset(draggableData: DraggableData, id: string, offset: Mous
 function setTransformOnScroll(
   draggableData: DraggableData,
   id: string,
-  delta: Transform,
+  rawTransform: Transform,
   modifier: Modifier
 ) {
   const draggable = draggableData[id];
   const transform = modifier({
     draggingNodeRect: draggable.rect,
     transform: {
-      x: draggable.transform.x + delta.x,
-      y: draggable.transform.y + delta.y,
+      x: rawTransform.x,
+      y: rawTransform.y,
     },
     id,
   });
@@ -176,6 +176,30 @@ function setTransformOnScroll(
     [id]: {
       ...draggable,
       transform,
+    },
+  };
+}
+
+function setVisualTransformOnScroll(
+  draggableData: DraggableData,
+  id: string,
+  delta: Transform,
+  modifier: Modifier
+) {
+  const draggable = draggableData[id];
+  const visualTransform = modifier({
+    draggingNodeRect: draggable.rect,
+    transform: {
+      x: draggable.visualTransform.x + delta.x,
+      y: draggable.visualTransform.y + delta.y,
+    },
+    id,
+  });
+  return {
+    ...draggableData,
+    [id]: {
+      ...draggable,
+      visualTransform,
     },
   };
 }
@@ -217,20 +241,16 @@ export function DnDProvider({
   const [draggableData, setDraggableData] = useState<DraggableData>({});
   const state = useRef<DnDState>({
     state: 'idle',
-    initialMousePosition: {x: 0, y: 0},
+    mousePosition: {x: 0, y: 0},
     scrollPosition: {x: 0, y: 0},
-    initialScrollPosition: {x: 0, y: 0},
-    initialOffset: {x: 0, y: 0},
+    rawTransform: {x: 0, y: 0},
     activeDraggable: null,
   });
 
   useScrollIntent({
     state,
     draggables,
-    enabled:
-      // TODO: does not really work atm
-      state.current.activeDraggable === null ||
-      !state.current.activeDraggable.startsWith('unscheduled'),
+    enabled: true,
   });
 
   const registerDroppable = useCallback((id, node) => {
@@ -250,10 +270,9 @@ export function DnDProvider({
     if (state.current.activeDraggable === id) {
       state.current = {
         state: 'idle',
-        initialMousePosition: {x: 0, y: 0},
+        mousePosition: {x: 0, y: 0},
         scrollPosition: {x: 0, y: 0},
-        initialScrollPosition: {x: 0, y: 0},
-        initialOffset: {x: 0, y: 0},
+        rawTransform: {x: 0, y: 0},
         activeDraggable: null,
       };
     }
@@ -261,29 +280,32 @@ export function DnDProvider({
     setDraggables(d => removeKey(d, id));
   }, []);
 
-  const onMouseDown = useCallback((id: string, draggable: Draggable, {x, y, offsetX, offsetY}) => {
-    if (state.current.state === 'idle') {
-      if (!draggable) {
-        return;
-      }
+  const onMouseDown = useCallback(
+    (id: string, draggable: Draggable, {offsetX, offsetY, clientX, clientY}) => {
+      if (state.current.state === 'idle') {
+        if (!draggable) {
+          return;
+        }
 
-      const scrollParent = getScrollParent(draggable.node.current); // TODO: this should be getTotalScroll()
-      state.current = {
-        state: 'mousedown',
-        initialMousePosition: {x, y},
-        scrollPosition: {x: 0, y: 0},
-        initialScrollPosition: {x: scrollParent.scrollLeft, y: scrollParent.scrollTop},
-        initialOffset: {x: offsetX, y: offsetY},
-        activeDraggable: id,
-      };
-      setDraggableData(d =>
-        setInitialOffset(setBoundingRectAndScroll(d, draggable.node, id), id, {
-          x: offsetX,
-          y: offsetY,
-        })
-      );
-    }
-  }, []);
+        const scrollParent = getScrollParent(draggable.node.current); // TODO: this should be getTotalScroll()
+        state.current = {
+          state: 'mousedown',
+          mousePosition: {x: clientX, y: clientY},
+          scrollPosition: {x: scrollParent.scrollLeft, y: scrollParent.scrollTop},
+          rawTransform: {x: 0, y: 0},
+          activeDraggable: id,
+        };
+        setDraggableData(d =>
+          setInitialOffset(setBoundingRectAndScroll(d, draggable.node, id), id, {
+            x: offsetX,
+            y: offsetY,
+          })
+        );
+        console.log('initial mouse', clientY);
+      }
+    },
+    []
+  );
 
   const onMouseMove = useCallback(
     (e: MouseEvent) => {
@@ -291,20 +313,21 @@ export function DnDProvider({
         if (state.current.state === 'mousedown') {
           state.current.state = 'dragging';
         }
+        const diff = {
+          x: e.clientX - state.current.mousePosition.x,
+          y: e.clientY - state.current.mousePosition.y,
+        };
+        console.log('diff', diff);
+        state.current.mousePosition = {x: e.clientX, y: e.clientY};
+        state.current.rawTransform = {
+          x: state.current.rawTransform.x + diff.x,
+          y: state.current.rawTransform.y + diff.y,
+        };
         setDraggableData(d =>
           setMousePosition(
-            setTransform(
-              d,
-              state.current.activeDraggable,
-              state.current.initialMousePosition,
-              {
-                x: e.pageX + state.current.scrollPosition.x,
-                y: e.pageY + state.current.scrollPosition.y,
-              },
-              modifier
-            ),
+            setTransform(d, state.current.activeDraggable, state.current.rawTransform, modifier),
             state.current.activeDraggable,
-            {x: e.pageX, y: e.pageY}
+            {x: e.clientX, y: e.clientY}
           )
         );
       }
@@ -316,25 +339,20 @@ export function DnDProvider({
     (e: MouseEvent) => {
       if (state.current.state === 'dragging') {
         state.current.state = 'idle';
-        const mouse = {x: e.pageX, y: e.pageY};
+        const mouse = {x: e.clientX, y: e.clientY};
         const overlapping = getOverlappingDroppables(droppables, mouse);
         const data = draggableData[state.current.activeDraggable];
         const delta = modifier({
           draggingNodeRect: data.rect,
           transform: {
-            x: e.pageX + state.current.scrollPosition.x - state.current.initialMousePosition.x,
-            y: e.pageY + state.current.scrollPosition.y - state.current.initialMousePosition.y,
+            x: state.current.rawTransform.x,
+            y: state.current.rawTransform.y,
           },
           id: state.current.activeDraggable,
         });
         console.time('drop');
-        onDrop(
-          state.current.activeDraggable,
-          overlapping,
-          delta,
-          mouse,
-          state.current.initialOffset
-        );
+        console.log('delta', delta.y / 2);
+        onDrop(state.current.activeDraggable, overlapping, delta, mouse, {x: 0, y: 0});
         console.timeEnd('drop');
       } else if (state.current.state === 'mousedown') {
         state.current.state = 'idle';
@@ -353,30 +371,69 @@ export function DnDProvider({
 
       const target = e.target as HTMLElement;
       const draggable = draggables[state.current.activeDraggable];
+      const data = draggableData[state.current.activeDraggable];
 
-      if (draggable.fixed) {
-        // fixed elements don't move with the scroll
+      // if (draggable.fixed) {
+      //   // fixed elements don't move with the scroll
+      //   return;
+      // }
+      console.log(data.fixed, draggable);
+
+      if (!data.fixed && !target.contains(draggable.node.current)) {
         return;
       }
+      console.log('scroll', target, draggable);
 
-      if (!target.contains(draggable.node.current)) {
-        return;
+      if (!data.fixed) {
+        // get the container scroll position instead of the window scroll position
+        const deltaX =
+          target.scrollLeft -
+          state.current.scrollPosition.x -
+          state.current.initialScrollPosition.x;
+        const deltaY =
+          target.scrollTop - state.current.scrollPosition.y - state.current.initialScrollPosition.y;
+        state.current.scrollPosition = {
+          x: state.current.scrollPosition.x + deltaX,
+          y: state.current.scrollPosition.y + deltaY,
+        };
+        setDraggableData(d =>
+          setTransformOnScroll(d, state.current.activeDraggable, {x: deltaX, y: deltaY}, modifier)
+        );
+        setDraggableData(d =>
+          setVisualTransformOnScroll(
+            d,
+            state.current.activeDraggable,
+            {x: deltaX, y: deltaY},
+            modifier
+          )
+        );
+      } else {
+        // get the container scroll position instead of the window scroll position
+        const deltaX = 0;
+        const deltaY = target.scrollTop - state.current.scrollPosition.y;
+        state.current.scrollPosition = {
+          x: target.scrollLeft,
+          y: target.scrollTop,
+        };
+        state.current.rawTransform = {
+          x: state.current.rawTransform.x + deltaX,
+          y: state.current.rawTransform.y + deltaY,
+        };
+        setDraggableData(d =>
+          setMousePosition(
+            setTransformOnScroll(
+              d,
+              state.current.activeDraggable,
+              state.current.rawTransform,
+              modifier
+            ),
+            state.current.activeDraggable,
+            {x: e.clientX, y: e.clientY}
+          )
+        );
       }
-
-      // get the container scroll position instead of the window scroll position
-      const deltaX =
-        target.scrollLeft - state.current.scrollPosition.x - state.current.initialScrollPosition.x;
-      const deltaY =
-        target.scrollTop - state.current.scrollPosition.y - state.current.initialScrollPosition.y;
-      state.current.scrollPosition = {
-        x: state.current.scrollPosition.x + deltaX,
-        y: state.current.scrollPosition.y + deltaY,
-      };
-      setDraggableData(d =>
-        setTransformOnScroll(d, state.current.activeDraggable, {x: deltaX, y: deltaY}, modifier)
-      );
     },
-    [modifier, draggables]
+    [modifier, draggables, draggableData]
   );
 
   const onKeyDown = useCallback((e: KeyboardEvent) => {
@@ -479,7 +536,14 @@ export function useDraggable({id, fixed = false}: {id: string; fixed?: boolean})
       const rect = e.currentTarget.getBoundingClientRect();
       const offsetX = e.clientX - rect.left;
       const offsetY = e.clientY - rect.top;
-      _onMouseDown(id, draggable, {x: e.pageX, y: e.pageY, offsetX, offsetY});
+      _onMouseDown(id, draggable, {
+        x: e.clientX,
+        y: e.clientY,
+        offsetX,
+        offsetY,
+        clientX: e.clientX,
+        clientY: e.clientY,
+      });
     },
     [_onMouseDown, id, draggable]
   );
@@ -498,11 +562,13 @@ export function useDraggable({id, fixed = false}: {id: string; fixed?: boolean})
     };
   }, [id, fixed, registerDraggable, unregisterDraggable]);
 
-  const {transform, rect, initialScroll, mouse, initialOffset: offset} = draggableData || {};
+  const {transform, visualTransform, rect, initialScroll, mouse, initialOffset: offset} =
+    draggableData || {};
 
   return {
     setNodeRef,
     transform,
+    visualTransform: transform ? visualTransform : null,
     isDragging: !!transform,
     listeners,
     rect,

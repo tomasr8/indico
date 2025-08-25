@@ -103,6 +103,7 @@ export function DayTimetable({dt, eventId, minHour, maxHour, entries}: DayTimeta
 
     // Cannot drop on itself
     over = over.filter(o => o.id !== who);
+    console.log(who, over);
 
     if (who.startsWith('unscheduled-')) {
       const calendar = over.find(o => o.id === 'calendar');
@@ -121,6 +122,30 @@ export function DayTimetable({dt, eventId, minHour, maxHour, entries}: DayTimeta
 
     const calendar = over.find(o => o.id === 'calendar');
     if (!calendar) {
+      const unsch = over.find(o => o.id === 'unscheduled');
+      if (unsch) {
+        let fromEntry: Entry | undefined = entries.find(e => e.id === who);
+        let fromBlock: BlockEntry | undefined;
+        console.log('fromEntry', fromEntry, who);
+        if (!fromEntry) {
+          // If we didn't find the entry in the top level,
+          // it must be a break inside a session block.
+          fromBlock = entries
+            .filter(e => e.type === EntryType.SessionBlock)
+            .find(b => b.children.find(c => c.id === who));
+
+          if (!fromBlock) {
+            return;
+          }
+
+          fromEntry = fromBlock.children.find(c => c.id === who);
+          if (!fromEntry || fromEntry.type !== EntryType.Break) {
+            return;
+          }
+        }
+        console.log('unschedling', fromEntry);
+        return dispatch(actions.unscheduleEntry(fromEntry, eventId));
+      }
       return;
     }
 
@@ -292,7 +317,7 @@ export function DayTimetable({dt, eventId, minHour, maxHour, entries}: DayTimeta
   const restrictToCalendar = useMemo(() => createRestrictToCalendar(calendarRef), [calendarRef]);
 
   return (
-    <DnDProvider onDrop={handleDragEnd} modifier={restrictToCalendar}>
+    <DnDProvider onDrop={handleDragEnd}>
       <UnscheduledContributions dt={dt} />
       <div className="wrapper">
         <div styleName="wrapper">
